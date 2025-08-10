@@ -1,4 +1,4 @@
-from ocr.initial_ocr import PreprocessSettings, TesseractSettings, OcrProfile
+from ocr.ocr import PreprocessSettings, TesseractSettings, OcrProfile
 import pandas as pd
 import numpy as np
 

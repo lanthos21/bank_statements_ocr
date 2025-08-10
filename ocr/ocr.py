@@ -1,6 +1,7 @@
 import fitz, cv2, numpy as np, pandas as pd, pytesseract
-from ocr.classes import PreprocessSettings, TesseractSettings, OcrProfile
 from PIL import Image, ImageEnhance
+
+from ocr.helpers import PreprocessSettings, TesseractSettings, OcrProfile
 
 
 def render_page_to_image(doc, page_num: int, dpi: int) -> np.ndarray:

@@ -1,26 +1,18 @@
-# main.py
 import json
 from pathlib import Path
-from ocr.initial_ocr import ocr_pdf_to_raw_data
-from ocr.profiles import PROFILES
-from parsers.boi_current import parse_boi_statement
-from parsers.revolut import parse_revolut_statement
-
-BANK_PARSERS = {
-    "BOI": parse_boi_statement,
-    "REVOLUT": parse_revolut_statement,
-}
+from ocr.ocr import ocr_pdf_to_raw_data
+from mapping import OCR_SETTINGS, BANK_PARSERS
 
 def main():
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut euro-9604.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\downloadStatement v2.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi may-1871.pdf"
-    bank_code = "BOI"     # could be auto-detected
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut euro-9604.pdf"
+    bank_code = "REVOLUT"     # could be auto-detected
     client = "Client 1"
     account_type = "Current Account"
 
-    profile = PROFILES[bank_code]
-    raw_ocr = ocr_pdf_to_raw_data(pdf_path, profile)
+    ocr_settings = OCR_SETTINGS[bank_code]
+    raw_ocr = ocr_pdf_to_raw_data(pdf_path, ocr_settings)
 
     parser_func = BANK_PARSERS[bank_code]
     structured_data = parser_func(raw_ocr, client=client, account_type=account_type)

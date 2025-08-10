@@ -1,8 +1,6 @@
 from datetime import datetime
 import re
 
-import re
-
 def parse_currency(value: str, strip_currency: bool = True) -> float | None:
     """
     Parses a currency string into a float.
@@ -36,8 +34,6 @@ def parse_currency(value: str, strip_currency: bool = True) -> float | None:
         return float(cleaned)
     except ValueError:
         return None
-
-
 
 
 def parse_date(date_str: str) -> str | None:

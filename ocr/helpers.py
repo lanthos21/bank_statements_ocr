@@ -67,3 +67,5 @@ class OcrProfile:
     # Optional hooks if a bank needs custom tweaks after OCR
     post_line_hook: Optional[Callable[[pd.DataFrame, np.ndarray], pd.DataFrame]] = None
     # Optional: a second, focused pass (e.g., amounts column); your parser can also do this.
+
+
