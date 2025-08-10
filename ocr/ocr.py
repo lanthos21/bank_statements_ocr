@@ -88,8 +88,7 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile) -> dict:
 
         pages_output.append({
             "page_number": page_num + 1,
-            "lines": lines_output,
-            "image": processed
+            "lines": lines_output
         })
     doc.close()
     return {"file_name": pdf_path.split("\\")[-1], "pages": pages_output}

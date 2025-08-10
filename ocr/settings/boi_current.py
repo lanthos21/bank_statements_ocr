@@ -1,6 +1,6 @@
 from ocr.helpers import OcrProfile, PreprocessSettings, TesseractSettings
 
-PROFILE = OcrProfile(
+OCR_SETTINGS = OcrProfile(
     name="BOI",
     preprocess=PreprocessSettings(
         dpi=400,
