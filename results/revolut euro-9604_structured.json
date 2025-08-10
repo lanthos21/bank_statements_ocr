@@ -1,0 +1,7400 @@
+{
+  "client": "Client 1",
+  "file_name": "revolut euro-9604.pdf",
+  "account_holder": null,
+  "institution": "Revolut",
+  "account_type": "Current Account",
+  "iban": "LT653250057280663648",
+  "bic": null,
+  "statement_start_date": "2025-01-01",
+  "statement_end_date": "2025-07-15",
+  "opening_balance": null,
+  "closing_balance_statement": {
+    "value": 7316.06,
+    "currency": "EUR"
+  },
+  "closing_balance_calculated": {
+    "value": 1664.79,
+    "currency": "EUR"
+  },
+  "transactions": [
+    {
+      "transactions_date": "2025-01-01",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 38.76,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 38.76,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-01",
+      "transaction_type": "debit",
+      "description": "SWEENEYS",
+      "amount": {
+        "value": 6.4,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 32.36,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 32.36,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-02",
+      "transaction_type": "debit",
+      "description": "Dublin Zoo",
+      "amount": {
+        "value": 12.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 19.86,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 19.86,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-03",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 240.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 259.86,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 259.86,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-03",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 250.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 9.86,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 9.86,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-04",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 100.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 109.86,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 109.86,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-04",
+      "transaction_type": "credit",
+      "description": "Transfer from NUALA THERESA FITZGIBBON",
+      "amount": {
+        "value": 22.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 132.36,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 132.36,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-04",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.74,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 131.62,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 131.62,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-06",
+      "transaction_type": "debit",
+      "description": "Sano Pizza",
+      "amount": {
+        "value": 124.63,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6.99,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 6.99,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-07",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.22,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5.77,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 5.77,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-08",
+      "transaction_type": "debit",
+      "description": "Tesco",
+      "amount": {
+        "value": 3.39,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 2.38,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 2.38,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-09",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 120.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 122.38,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 122.38,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-10",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 220.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 342.38,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 342.38,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-10",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 40.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 382.38,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 382.38,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-10",
+      "transaction_type": "debit",
+      "description": "Transfer to Paula Mc Gurdy",
+      "amount": {
+        "value": 360.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 22.38,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 22.38,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-10",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 21.18,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 21.18,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-11",
+      "transaction_type": "credit",
+      "description": "To EUR",
+      "amount": {
+        "value": 9.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 30.38,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 30.38,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-11",
+      "transaction_type": "debit",
+      "description": "Centra",
+      "amount": {
+        "value": 5.4,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 24.98,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 24.98,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-12",
+      "transaction_type": "credit",
+      "description": "Transfer from RHONA MARY O'NEILL",
+      "amount": {
+        "value": 40.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 64.98,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 64.98,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-12",
+      "transaction_type": "credit",
+      "description": "Transfer from Bonnie Alexandria Hickey",
+      "amount": {
+        "value": 40.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 104.98,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 104.98,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-13",
+      "transaction_type": "debit",
+      "description": "To Gc Re Bikmo",
+      "amount": {
+        "value": 8.78,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 96.2,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 96.2,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-15",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 480.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 576.2,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 576.2,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-15",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 520.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 56.2,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 56.2,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-17",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 30.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 86.2,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 86.2,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-17",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 85.6,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 85.6,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-18",
+      "transaction_type": "debit",
+      "description": "",
+      "amount": {
+        "value": 59.7,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 25.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 25.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-18",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 10.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 35.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 35.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-18",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.62,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 35.28,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 35.28,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-19",
+      "transaction_type": "debit",
+      "description": "The Lovely Food Company",
+      "amount": {
+        "value": 30.69,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 4.59,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 4.59,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-20",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 57.44,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 62.03,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 62.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-20",
+      "transaction_type": "debit",
+      "description": "Transfer to JOANNE SINNOTT",
+      "amount": {
+        "value": 15.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 47.03,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 47.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-21",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.22,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 46.81,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 46.81,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-22",
+      "transaction_type": "debit",
+      "description": "Moonpig",
+      "amount": {
+        "value": 5.89,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 40.92,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 40.92,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-22",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 39.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 39.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 325.36,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 364.68,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 364.68,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 364.18,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 364.18,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 363.18,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 363.18,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.52,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 361.66,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 361.66,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.4,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 361.26,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 361.26,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "debit",
+      "description": "Transfer to LIL MAIRE FAHY",
+      "amount": {
+        "value": 80.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 281.26,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 281.26,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 60.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 221.26,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 221.26,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "credit",
+      "description": "To EUR",
+      "amount": {
+        "value": 9.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 230.46,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 230.46,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "debit",
+      "description": "Aramark",
+      "amount": {
+        "value": 1.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 229.26,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 229.26,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "debit",
+      "description": "SumUp",
+      "amount": {
+        "value": 10.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 219.26,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 219.26,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "debit",
+      "description": "Dubray Books",
+      "amount": {
+        "value": 38.24,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 181.02,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 181.02,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "debit",
+      "description": "Penneys",
+      "amount": {
+        "value": 12.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 168.22,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 168.22,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "debit",
+      "description": "Marks & Spencer",
+      "amount": {
+        "value": 43.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 124.72,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 124.72,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "debit",
+      "description": "Dunnes Stores",
+      "amount": {
+        "value": 123.75,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 0.97,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 0.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 300.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 300.97,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 300.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "debit",
+      "description": "Transfer to Rianna Grant",
+      "amount": {
+        "value": 95.18,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 205.79,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 205.79,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.02,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 205.77,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 205.77,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 204.17,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 204.17,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 203.97,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 203.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 202.37,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 202.37,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 550.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 752.37,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 752.37,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-25",
+      "transaction_type": "debit",
+      "description": "Inish Pharmacy",
+      "amount": {
+        "value": 64.99,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 687.38,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 687.38,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-25",
+      "transaction_type": "debit",
+      "description": "Marks & Spencer",
+      "amount": {
+        "value": 85.9,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 601.48,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 601.48,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-25",
+      "transaction_type": "debit",
+      "description": "Marks & Spencer",
+      "amount": {
+        "value": 3.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 598.28,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 598.28,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-25",
+      "transaction_type": "debit",
+      "description": "SumUp",
+      "amount": {
+        "value": 11.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 587.08,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 587.08,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-25",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.16,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 586.92,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 586.92,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-26",
+      "transaction_type": "debit",
+      "description": "Dunnes Stores",
+      "amount": {
+        "value": 170.92,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 416.0,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 416.0,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-27",
+      "transaction_type": "debit",
+      "description": "Transfer to JOSEPH MASTERSON",
+      "amount": {
+        "value": 20.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 396.0,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 396.0,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-27",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 350.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 46.0,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 46.0,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-27",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.36,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 44.64,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 44.64,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-28",
+      "transaction_type": "debit",
+      "description": "Tesco",
+      "amount": {
+        "value": 18.32,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 26.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 26.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-30",
+      "transaction_type": "credit",
+      "description": "Transfer from Bonnie Alexandria Hickey",
+      "amount": {
+        "value": 10.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 36.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 36.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-30",
+      "transaction_type": "debit",
+      "description": "Transfer to Bonnie Alexandria Hickey",
+      "amount": {
+        "value": 10.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 26.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 26.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-31",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 280.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 306.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 306.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-31",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 304.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 304.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-31",
+      "transaction_type": "credit",
+      "description": "To EUR",
+      "amount": {
+        "value": 13.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 317.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 317.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-31",
+      "transaction_type": "debit",
+      "description": "Transfer to Clare Anne Oshea",
+      "amount": {
+        "value": 20.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 297.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 297.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-01",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 400.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 697.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 697.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-01",
+      "transaction_type": "debit",
+      "description": "Brown Thomas",
+      "amount": {
+        "value": 295.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 402.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 402.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-01",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 400.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 400.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-03",
+      "transaction_type": "debit",
+      "description": "Halpenny Golf (ecomm)",
+      "amount": {
+        "value": 100.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 300.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 300.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-11",
+      "transaction_type": "debit",
+      "description": "To Gc Re Bikmo",
+      "amount": {
+        "value": 8.78,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 291.54,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 291.54,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-17",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 200.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 491.54,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 491.54,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-17",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 491.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 0.54,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 0.54,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-22",
+      "transaction_type": "credit",
+      "description": "Transfer from JOSEPH MASTERSON",
+      "amount": {
+        "value": 240.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 240.54,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 240.54,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-22",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 240.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 0.54,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 0.54,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-25",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 450.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 450.54,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 450.54,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-28",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 449.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 449.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-03",
+      "transaction_type": "debit",
+      "description": "To EUR fun(d)",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 399.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 399.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-03",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 390.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 9.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 9.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-03",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 7.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-04",
+      "transaction_type": "debit",
+      "description": "Image Express",
+      "amount": {
+        "value": 4.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 3.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 3.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-05",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 53.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 53.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-05",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 3.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 3.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-08",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 19.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 22.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 22.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-08",
+      "transaction_type": "debit",
+      "description": "Transfer to RUTH MARY LILLIS",
+      "amount": {
+        "value": 19.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 3.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 3.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-09",
+      "transaction_type": "credit",
+      "description": "Transfer from DEIRDRE ELIZABETH WYER",
+      "amount": {
+        "value": 30.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 33.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 33.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-09",
+      "transaction_type": "debit",
+      "description": "Transfer to DEIRDRE ELIZABETH WYER",
+      "amount": {
+        "value": 30.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 3.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 3.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-10",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 20.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 23.34,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 23.34,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-10",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 22.84,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 22.84,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-10",
+      "transaction_type": "credit",
+      "description": "Transfer from JOANNE SINNOTT",
+      "amount": {
+        "value": 15.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 37.84,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 37.84,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-11",
+      "transaction_type": "debit",
+      "description": "Sevenwonders.touchtakeawa",
+      "amount": {
+        "value": 12.75,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 25.09,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 25.09,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-11",
+      "transaction_type": "debit",
+      "description": "To Gc Re Bikmo",
+      "amount": {
+        "value": 8.78,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 16.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 16.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-12",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 100.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 116.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 116.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-12",
+      "transaction_type": "debit",
+      "description": "Transfer to CHRISTOPHER ALAN MILLS",
+      "amount": {
+        "value": 100.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 16.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 16.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-15",
+      "transaction_type": "credit",
+      "description": "Transfer from PATRICK GERARD DOWNEY",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 66.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 66.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-15",
+      "transaction_type": "debit",
+      "description": "Transfer to PATRICK GERARD DOWNEY",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 16.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 16.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-15",
+      "transaction_type": "credit",
+      "description": "Transfer from PATRICK GERARD DOWNEY",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 66.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 66.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-15",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 66.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 0.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 0.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-20",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 145.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 145.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 145.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-20",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 145.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 0.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 0.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-21",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 50.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 50.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-22",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 50.21,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 50.21,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-23",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 49.71,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 49.71,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-24",
+      "transaction_type": "debit",
+      "description": "Vhi Womens Mini Marathon",
+      "amount": {
+        "value": 44.95,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 4.76,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 4.76,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-24",
+      "transaction_type": "debit",
+      "description": "Lotts & Co.",
+      "amount": {
+        "value": 3.75,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 1.01,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1.01,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-25",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 550.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 551.01,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 551.01,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-25",
+      "transaction_type": "debit",
+      "description": "To EUR fun(d)",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 501.01,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 501.01,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-26",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 499.51,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 499.51,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-27",
+      "transaction_type": "debit",
+      "description": "Tesco",
+      "amount": {
+        "value": 1.25,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 498.26,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 498.26,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-27",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 548.26,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 548.26,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-27",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 548.16,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 548.16,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-27",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 500.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 48.16,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 48.16,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-28",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 48.06,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 48.06,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-28",
+      "transaction_type": "debit",
+      "description": "Degrees",
+      "amount": {
+        "value": 14.95,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 33.11,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 33.11,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-29",
+      "transaction_type": "debit",
+      "description": "Degrees",
+      "amount": {
+        "value": 14.95,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 18.16,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 18.16,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-29",
+      "transaction_type": "debit",
+      "description": "Transfer to JOICE JOSE",
+      "amount": {
+        "value": 17.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 1.16,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1.16,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-31",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 100.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 101.16,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 101.16,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-31",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.7,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 99.46,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 99.46,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-01",
+      "transaction_type": "debit",
+      "description": "Dublin Marathon",
+      "amount": {
+        "value": 48.15,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 51.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 51.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-03",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 49.51,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 49.51,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-04",
+      "transaction_type": "debit",
+      "description": "Degrees",
+      "amount": {
+        "value": 3.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 46.41,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 46.41,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-06",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 44.61,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 44.61,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-07",
+      "transaction_type": "debit",
+      "description": "FREE NOW",
+      "amount": {
+        "value": 20.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 24.51,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 24.51,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-10",
+      "transaction_type": "credit",
+      "description": "Transfer from RHONA MARY O'NEILL",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 74.51,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 74.51,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-11",
+      "transaction_type": "debit",
+      "description": "Transfer to SINEAD KELLY",
+      "amount": {
+        "value": 15.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 59.51,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 59.51,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-11",
+      "transaction_type": "debit",
+      "description": "To Ge Re Bikmo",
+      "amount": {
+        "value": 8.78,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 50.73,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 50.73,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-12",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 48.73,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 48.73,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-12",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.02,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 47.71,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 47.71,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-13",
+      "transaction_type": "debit",
+      "description": "Tesco",
+      "amount": {
+        "value": 15.49,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 32.22,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 32.22,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-13",
+      "transaction_type": "debit",
+      "description": "Pinto Wines",
+      "amount": {
+        "value": 15.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 17.22,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 17.22,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-14",
+      "transaction_type": "credit",
+      "description": "To EUR",
+      "amount": {
+        "value": 228.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 245.22,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 245.22,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-14",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 461.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 706.22,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 706.22,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-14",
+      "transaction_type": "debit",
+      "description": "Transfer to PAULA BERNADETTE KEANEY",
+      "amount": {
+        "value": 690.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 16.22,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 16.22,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-16",
+      "transaction_type": "debit",
+      "description": "Tesco",
+      "amount": {
+        "value": 15.75,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 0.47,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 0.47,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-25",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 450.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 450.47,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 450.47,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-25",
+      "transaction_type": "debit",
+      "description": "Transfer to JOSEPH MASTERSON",
+      "amount": {
+        "value": 44.22,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 406.25,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 406.25,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-25",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 390.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 16.25,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 16.25,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-25",
+      "transaction_type": "credit",
+      "description": "Transfer from Bonnie Alexandria Hickey",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 66.25,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 66.25,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-25",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 20.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 86.25,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 86.25,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-27",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.22,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 86.03,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 86.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-28",
+      "transaction_type": "debit",
+      "description": "Tesco",
+      "amount": {
+        "value": 0.89,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 85.14,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 85.14,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-30",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 84.04,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 84.04,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-30",
+      "transaction_type": "debit",
+      "description": "To EUR fun(d)",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 34.04,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 34.04,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-01",
+      "transaction_type": "debit",
+      "description": "Sevenwonders.touchtakeawa",
+      "amount": {
+        "value": 11.45,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 22.59,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 22.59,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-01",
+      "transaction_type": "debit",
+      "description": "Transfer to ANNE MARGARET MASTERSON",
+      "amount": {
+        "value": 20.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 2.59,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 2.59,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-03",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 400.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 402.59,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 402.59,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-03",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.7,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 401.89,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 401.89,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-03",
+      "transaction_type": "credit",
+      "description": "Transfer from CHARLOTTE LOUISE SAVILLE",
+      "amount": {
+        "value": 400.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 801.89,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 801.89,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-03",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 800.79,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 800.79,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-04",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 799.79,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 799.79,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-04",
+      "transaction_type": "debit",
+      "description": "Epigenetics",
+      "amount": {
+        "value": 144.08,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 655.71,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 655.71,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-04",
+      "transaction_type": "debit",
+      "description": "Transfer to CHARLOTTE LOUISE SAVILLE",
+      "amount": {
+        "value": 80.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 575.71,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 575.71,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-05",
+      "transaction_type": "debit",
+      "description": "San Sab",
+      "amount": {
+        "value": 18.45,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 557.26,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 557.26,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-05",
+      "transaction_type": "debit",
+      "description": "Dunnes Stores",
+      "amount": {
+        "value": 179.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 377.76,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 377.76,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-05",
+      "transaction_type": "debit",
+      "description": "Transfer to PATRICK GERARD DOWNEY",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 327.76,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 327.76,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-05",
+      "transaction_type": "credit",
+      "description": "Transfer from PATRICK GERARD DOWNEY",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 377.76,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 377.76,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-05",
+      "transaction_type": "debit",
+      "description": "Transfer to PATRICK GERARD DOWNEY",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 327.76,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 327.76,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-05",
+      "transaction_type": "credit",
+      "description": "Transfer from PATRICK GERARD DOWNEY",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 377.76,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 377.76,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-05",
+      "transaction_type": "debit",
+      "description": "Transfer to PATRICK GERARD DOWNEY",
+      "amount": {
+        "value": 30.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 347.76,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 347.76,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-07",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.4,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 347.36,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 347.36,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-07",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 345.36,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 345.36,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-07",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.7,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 343.66,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 343.66,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-08",
+      "transaction_type": "debit",
+      "description": "Tesco",
+      "amount": {
+        "value": 51.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 291.86,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 291.86,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-08",
+      "transaction_type": "debit",
+      "description": "Tesco",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 289.86,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 289.86,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-08",
+      "transaction_type": "debit",
+      "description": "Bus Stop Newsagents",
+      "amount": {
+        "value": 18.15,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 271.71,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 271.71,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-08",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 271.61,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 271.61,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-08",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 271.51,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 271.51,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 269.51,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 269.51,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.34,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 269.17,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 269.17,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.9,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 268.27,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 268.27,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "debit",
+      "description": "Degrees",
+      "amount": {
+        "value": 14.95,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 253.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 253.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "debit",
+      "description": "Aramark",
+      "amount": {
+        "value": 1.95,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 251.37,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 251.37,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 249.37,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 249.37,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 248.87,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 248.87,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-10",
+      "transaction_type": "debit",
+      "description": "Transfer to RUTH MARY LILLIS",
+      "amount": {
+        "value": 15.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 233.87,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 233.87,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-10",
+      "transaction_type": "debit",
+      "description": "Transfer to RONAN O DULAING",
+      "amount": {
+        "value": 10.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 223.87,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 223.87,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-10",
+      "transaction_type": "debit",
+      "description": "Corrigans Butchers",
+      "amount": {
+        "value": 12.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 211.87,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 211.87,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-10",
+      "transaction_type": "debit",
+      "description": "Tesco",
+      "amount": {
+        "value": 41.83,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 170.04,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 170.04,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-10",
+      "transaction_type": "debit",
+      "description": "McCabes Pharmacy",
+      "amount": {
+        "value": 18.55,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 151.49,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 151.49,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-10",
+      "transaction_type": "debit",
+      "description": "Daybreak",
+      "amount": {
+        "value": 17.75,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 133.74,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 133.74,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-10",
+      "transaction_type": "debit",
+      "description": "Pinto Wines",
+      "amount": {
+        "value": 30.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 103.74,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 103.74,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-11",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 101.74,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 101.74,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-11",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 99.74,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 99.74,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-11",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 98.74,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 98.74,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-12",
+      "transaction_type": "debit",
+      "description": "Dublin Zoo",
+      "amount": {
+        "value": 8.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 90.74,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 90.74,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-12",
+      "transaction_type": "debit",
+      "description": "BaxterStorey",
+      "amount": {
+        "value": 14.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 76.74,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 76.74,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-12",
+      "transaction_type": "credit",
+      "description": "To EUR",
+      "amount": {
+        "value": 45.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 121.74,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 121.74,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-12",
+      "transaction_type": "debit",
+      "description": "MACE",
+      "amount": {
+        "value": 18.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 103.24,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 103.24,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-13",
+      "transaction_type": "debit",
+      "description": "To Ge Re Bikmo",
+      "amount": {
+        "value": 8.78,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 94.46,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 94.46,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-13",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 93.46,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 93.46,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-13",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 91.46,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 91.46,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-14",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 90.96,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 90.96,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-14",
+      "transaction_type": "debit",
+      "description": "Tesco",
+      "amount": {
+        "value": 17.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 73.96,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 73.96,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-14",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 300.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 373.96,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 373.96,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-14",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 371.96,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 371.96,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-14",
+      "transaction_type": "debit",
+      "description": "MACE",
+      "amount": {
+        "value": 18.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 353.46,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 353.46,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-15",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 250.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 603.46,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 603.46,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-15",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 602.46,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 602.46,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-15",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 600.46,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 600.46,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-15",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.52,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 598.94,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 598.94,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-15",
+      "transaction_type": "debit",
+      "description": "Yoga Class The Quiet",
+      "amount": {
+        "value": 190.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 408.94,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 408.94,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-15",
+      "transaction_type": "debit",
+      "description": "Sevenwonders.touchtakeawa",
+      "amount": {
+        "value": 11.75,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 397.19,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 397.19,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-15",
+      "transaction_type": "debit",
+      "description": "Transfer to Aoife Noelle Kirrane",
+      "amount": {
+        "value": 300.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 97.19,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 97.19,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-16",
+      "transaction_type": "debit",
+      "description": "Strike Pay",
+      "amount": {
+        "value": 3.24,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 93.95,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 93.95,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-16",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 93.75,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 93.75,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-16",
+      "transaction_type": "debit",
+      "description": "Brown Thomas",
+      "amount": {
+        "value": 45.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 48.75,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 48.75,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-16",
+      "transaction_type": "debit",
+      "description": "Sprout & Co",
+      "amount": {
+        "value": 12.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 36.25,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 36.25,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-17",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 35.65,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 35.65,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-17",
+      "transaction_type": "debit",
+      "description": "Scannells Bar",
+      "amount": {
+        "value": 11.9,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 23.75,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 23.75,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-18",
+      "transaction_type": "debit",
+      "description": "Tobaccoland",
+      "amount": {
+        "value": 18.7,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5.05,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 5.05,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-18",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 4.85,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 4.85,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-19",
+      "transaction_type": "debit",
+      "description": "Brambles",
+      "amount": {
+        "value": 3.9,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 0.95,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 0.95,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-21",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 15.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 15.95,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 15.95,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-22",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 20.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 35.95,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 35.95,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-22",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 35.85,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 35.85,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-22",
+      "transaction_type": "debit",
+      "description": "Pilates By Pilates By",
+      "amount": {
+        "value": 15.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 20.85,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 20.85,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-23",
+      "transaction_type": "debit",
+      "description": "Degrees",
+      "amount": {
+        "value": 14.95,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 5.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-24",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 500.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 505.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 505.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-25",
+      "transaction_type": "debit",
+      "description": "Transfer to RUTH MARY LILLIS",
+      "amount": {
+        "value": 280.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 225.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 225.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-26",
+      "transaction_type": "debit",
+      "description": "To EUR fun(d)",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 175.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 175.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-26",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 173.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 173.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-26",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 380.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 553.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 553.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-26",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 450.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 103.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 103.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-27",
+      "transaction_type": "debit",
+      "description": "Cathedral Stamps",
+      "amount": {
+        "value": 12.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 91.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 91.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-28",
+      "transaction_type": "credit",
+      "description": "Transfer from Mairead Murphy",
+      "amount": {
+        "value": 95.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 186.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 186.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-02",
+      "transaction_type": "debit",
+      "description": "Transfer to DEIRDRE ELIZABETH WYER",
+      "amount": {
+        "value": 10.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 176.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 176.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-02",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 300.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 476.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 476.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-02",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.32,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 475.58,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 475.58,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-02",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 220.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 695.58,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 695.58,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-02",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.68,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 693.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 693.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-03",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 1200.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 1893.9,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1893.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-03",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.62,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 1892.28,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1892.28,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-03",
+      "transaction_type": "credit",
+      "description": "To EUR",
+      "amount": {
+        "value": 19.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 1911.28,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1911.28,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-03",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 100.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 2011.28,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 2011.28,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-03",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 2009.28,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 2009.28,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-04",
+      "transaction_type": "debit",
+      "description": "Barry Power Golf",
+      "amount": {
+        "value": 220.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 1789.28,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1789.28,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-04",
+      "transaction_type": "debit",
+      "description": "Disneyland",
+      "amount": {
+        "value": 347.34,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 1441.94,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1441.94,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-04",
+      "transaction_type": "debit",
+      "description": "Disneyland",
+      "amount": {
+        "value": 218.16,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 1223.78,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1223.78,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-05",
+      "transaction_type": "debit",
+      "description": "Aer Lingus",
+      "amount": {
+        "value": 1213.19,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 10.59,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 10.59,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-11",
+      "transaction_type": "debit",
+      "description": "To Gc Re Bikmo",
+      "amount": {
+        "value": 8.78,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 1.81,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1.81,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-12",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 330.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 331.81,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 331.81,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-12",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 550.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 881.81,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 881.81,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-12",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 880.31,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 880.31,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-13",
+      "transaction_type": "debit",
+      "description": "Melia Hotels",
+      "amount": {
+        "value": 866.25,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 14.06,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 14.06,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-13",
+      "transaction_type": "credit",
+      "description": "Transfer from JOSEPH MASTERSON",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 64.06,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 64.06,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-13",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 63.26,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 63.26,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-13",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 62.46,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 62.46,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-13",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 20.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 82.46,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 82.46,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-14",
+      "transaction_type": "debit",
+      "description": "Fagan's Pub",
+      "amount": {
+        "value": 26.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 55.86,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 55.86,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-14",
+      "transaction_type": "debit",
+      "description": "Fagan's Pub",
+      "amount": {
+        "value": 26.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 29.26,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 29.26,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-17",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.64,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 27.62,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 27.62,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-17",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.62,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 26.0,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 26.0,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-18",
+      "transaction_type": "debit",
+      "description": "McMahon's of Botanic Avenue",
+      "amount": {
+        "value": 4.18,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 21.82,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 21.82,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-18",
+      "transaction_type": "debit",
+      "description": "MACE",
+      "amount": {
+        "value": 20.19,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 1.63,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1.63,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-19",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 35.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 36.63,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 36.63,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-19",
+      "transaction_type": "credit",
+      "description": "To EUR",
+      "amount": {
+        "value": 8.3,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 44.93,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 44.93,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-19",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 44.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 0.93,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 0.93,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-21",
+      "transaction_type": "credit",
+      "description": "Transfer from CHARLOTTE LOUISE SAVILLE",
+      "amount": {
+        "value": 15.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 15.93,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 15.93,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-21",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 35.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 50.93,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 50.93,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-21",
+      "transaction_type": "debit",
+      "description": "Transfer to NICOLA ELIZABETH GRANT-O'HARE",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 0.93,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 0.93,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-24",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 19.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 19.93,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 19.93,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-24",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.7,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 18.23,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 18.23,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-25",
+      "transaction_type": "debit",
+      "description": "Centra",
+      "amount": {
+        "value": 18.15,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 0.08,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 0.08,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-25",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 400.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 400.08,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 400.08,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-25",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 350.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 50.08,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 50.08,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-25",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 150.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 200.08,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 200.08,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-25",
+      "transaction_type": "debit",
+      "description": "Exchanged to GBP",
+      "amount": {
+        "value": 150.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 50.08,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 50.08,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-26",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 49.98,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 49.98,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-27",
+      "transaction_type": "debit",
+      "description": "Degrees",
+      "amount": {
+        "value": 14.95,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 35.03,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 35.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-01",
+      "transaction_type": "credit",
+      "description": "Top-Up by",
+      "amount": {
+        "value": 200.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 235.03,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 235.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-01",
+      "transaction_type": "debit",
+      "description": "Transfer to NICOLA ELIZABETH GRANT-O'HARE",
+      "amount": {
+        "value": 200.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 35.03,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 35.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-02",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 20.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 55.03,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 55.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-03",
+      "transaction_type": "credit",
+      "description": "Transfer from ANGELA KEIGHER",
+      "amount": {
+        "value": 435.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 490.03,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 490.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-03",
+      "transaction_type": "debit",
+      "description": "Transfer to JOANNE SINNOTT",
+      "amount": {
+        "value": 100.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 390.03,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 390.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-05",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.4,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 388.63,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 388.63,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-06",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 386.63,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 386.63,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-06",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 384.63,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 384.63,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-07",
+      "transaction_type": "debit",
+      "description": "C &T Superstore",
+      "amount": {
+        "value": 1.3,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 383.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 383.33,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-07",
+      "transaction_type": "debit",
+      "description": "Square",
+      "amount": {
+        "value": 42.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 341.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 341.33,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-07",
+      "transaction_type": "debit",
+      "description": "O'gowna Studios",
+      "amount": {
+        "value": 35.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 306.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 306.33,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-10",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 304.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 304.33,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-10",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 302.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 302.33,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-10",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.44,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 300.89,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 300.89,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-11",
+      "transaction_type": "debit",
+      "description": "Deliveroo",
+      "amount": {
+        "value": 22.28,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 278.61,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 278.61,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-11",
+      "transaction_type": "debit",
+      "description": "Billink Payments",
+      "amount": {
+        "value": 65.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 213.61,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 213.61,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-11",
+      "transaction_type": "debit",
+      "description": "Billink Payments",
+      "amount": {
+        "value": 40.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 173.61,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 173.61,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-11",
+      "transaction_type": "debit",
+      "description": "To Gc Re Bikmo",
+      "amount": {
+        "value": 8.78,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 164.83,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 164.83,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-11",
+      "transaction_type": "debit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 164.03,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 164.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-12",
+      "transaction_type": "debit",
+      "description": "FREE NOW",
+      "amount": {
+        "value": 11.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 152.43,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 152.43,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-01",
+      "transaction_type": "credit",
+      "description": "Transfer from Clare Anne Oshea",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5853.7,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 202.43,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-01",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5854.7,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 203.43,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-03",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5904.7,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 253.43,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-04",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.74,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5905.44,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 254.17,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-07",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.22,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5906.66,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 255.39,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-09",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 1.34,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5908.0,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 256.73,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-10",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5909.2,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 257.93,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-11",
+      "transaction_type": "debit",
+      "description": "To EUR",
+      "amount": {
+        "value": 9.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5900.0,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 248.73,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-17",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5900.6,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 249.33,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-18",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.62,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5901.22,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 249.95,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-19",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 2.34,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5903.56,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 252.29,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-19",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 0.4,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5903.96,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 252.69,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-21",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.22,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5904.18,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 252.91,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-22",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5905.78,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 254.51,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5906.28,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 255.01,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5907.28,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 256.01,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.52,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5908.8,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 257.53,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.4,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5909.2,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 257.93,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "debit",
+      "description": "To EUR",
+      "amount": {
+        "value": 9.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5900.0,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 248.73,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 1.64,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5901.64,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 250.37,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 0.66,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5902.3,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 251.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 2.36,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5904.66,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 253.39,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-23",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 1.64,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5906.3,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 255.03,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.02,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5906.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 255.05,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5907.92,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 256.65,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5908.12,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 256.85,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-24",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5909.72,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 258.45,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-25",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.16,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5909.88,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 258.61,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-27",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.36,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5911.24,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 259.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-28",
+      "transaction_type": "credit",
+      "description": "Transfer from JOSEPH MASTERSON",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 5961.24,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 309.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-30",
+      "transaction_type": "credit",
+      "description": "Transfer from MAJELLA PATRICIA LYNCH",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6011.24,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 359.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-31",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6013.24,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 361.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-01-31",
+      "transaction_type": "debit",
+      "description": "To EUR",
+      "amount": {
+        "value": 13.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6000.24,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 348.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-01",
+      "transaction_type": "credit",
+      "description": "Transfer from Clare Anne Oshea",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6050.24,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 398.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-01",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6052.24,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 400.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-03",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6102.24,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 450.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-16",
+      "transaction_type": "credit",
+      "description": "Transfer from ENDA PHILIP CULLIVAN",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6152.24,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 500.97,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-20",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 2.4,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6154.64,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 503.37,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-02-28",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6155.84,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 504.57,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-01",
+      "transaction_type": "credit",
+      "description": "Transfer from Clare Anne Oshea",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6205.84,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 554.57,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-01",
+      "transaction_type": "credit",
+      "description": "Transfer from JOSEPH MASTERSON",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6255.84,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 604.57,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-03",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6305.84,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 654.57,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-03",
+      "transaction_type": "credit",
+      "description": "To EUR fun(d)",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6355.84,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 704.57,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-03",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6357.84,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 706.57,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-03",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 1.05,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6358.89,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 707.62,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-05",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 1.32,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6360.21,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 708.94,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-05",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 0.01,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6360.22,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 708.95,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-08",
+      "transaction_type": "credit",
+      "description": "Transfer from ENDA PHILIP CULLIVAN",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6410.22,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 758.95,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-10",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6410.72,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 759.45,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-22",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6410.82,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 759.55,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-23",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6411.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 760.05,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-25",
+      "transaction_type": "credit",
+      "description": "To EUR fun(d)",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6461.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 810.05,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-26",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6462.82,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 811.55,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-27",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6462.92,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 811.65,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-28",
+      "transaction_type": "credit",
+      "description": "Transfer from JOSEPH MASTERSON",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6512.92,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 861.65,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-28",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6513.02,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 861.75,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-29",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 1.11,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6514.13,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 862.86,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-03-31",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.7,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6515.83,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 864.56,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-03",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6565.83,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 914.56,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-03",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6567.63,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 916.36,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-06",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6569.43,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 918.16,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-06",
+      "transaction_type": "credit",
+      "description": "Transfer from ENDA PHILIP CULLIVAN",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6619.43,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 968.16,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-12",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6621.43,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 970.16,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-12",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.02,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6622.45,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 971.18,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-14",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 228.17,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6850.62,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1199.35,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-14",
+      "transaction_type": "debit",
+      "description": "To EUR",
+      "amount": {
+        "value": 228.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6622.62,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 971.35,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-14",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 1.55,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6624.17,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 972.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-19",
+      "transaction_type": "credit",
+      "description": "Transfer from Clare Anne Oshea",
+      "amount": {
+        "value": 0.02,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6624.19,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 972.92,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-19",
+      "transaction_type": "credit",
+      "description": "Transfer from Clare Anne Oshea",
+      "amount": {
+        "value": 0.85,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6625.04,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 973.77,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-19",
+      "transaction_type": "credit",
+      "description": "Transfer from Clare Anne Oshea",
+      "amount": {
+        "value": 0.35,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6625.39,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 974.12,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-19",
+      "transaction_type": "credit",
+      "description": "Transfer from Clare Anne Oshea",
+      "amount": {
+        "value": 0.05,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6625.44,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 974.17,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-25",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 0.43,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6625.87,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 974.6,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-25",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 1.3,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6627.17,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 975.9,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-27",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.22,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6627.39,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 976.12,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-29",
+      "transaction_type": "credit",
+      "description": "Transfer from JOSEPH MASTERSON",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6677.39,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1026.12,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-30",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6678.49,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1027.22,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-04-30",
+      "transaction_type": "credit",
+      "description": "To EUR fun(d)",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6728.49,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1077.22,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-03",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6778.49,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1127.22,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-03",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.7,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6779.19,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1127.92,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-03",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6780.29,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1129.02,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-04",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6781.29,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1130.02,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-07",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.4,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6781.69,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1130.42,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-07",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6783.69,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1132.42,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-07",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.7,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6785.39,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1134.12,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-08",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6785.49,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1134.22,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-08",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6785.59,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1134.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6787.59,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1136.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.34,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6787.93,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1136.66,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.9,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6788.83,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1137.56,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6790.83,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1139.56,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-09",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6791.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1140.06,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-11",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6793.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1142.06,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-11",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6795.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1144.06,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-11",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6796.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1145.06,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-12",
+      "transaction_type": "debit",
+      "description": "To EUR",
+      "amount": {
+        "value": 45.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6751.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1100.06,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-13",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6752.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1101.06,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-13",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6754.33,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1103.06,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-14",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6754.83,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1103.56,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-14",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6756.83,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1105.56,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-15",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6757.83,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1106.56,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-15",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6759.83,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1108.56,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-15",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.52,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6761.35,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1110.08,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-16",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6761.55,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1110.28,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-17",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.6,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6762.15,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1110.88,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-18",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.2,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6762.35,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1111.08,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-19",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 1.22,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6763.57,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1112.3,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-22",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6763.67,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1112.4,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-26",
+      "transaction_type": "credit",
+      "description": "To EUR fun(d)",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6813.67,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1162.4,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-26",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6815.67,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1164.4,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-28",
+      "transaction_type": "credit",
+      "description": "Transfer from JOSEPH MASTERSON",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6865.67,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1214.4,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-05-30",
+      "transaction_type": "credit",
+      "description": "Transfer from MAJELLA PATRICIA LYNCH",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6915.67,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1264.4,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-01",
+      "transaction_type": "credit",
+      "description": "Transfer from Clare Anne Oshea",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6965.67,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1314.4,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-02",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.32,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6966.99,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1315.72,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-02",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.68,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 6968.67,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1317.4,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-03",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7018.67,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1367.4,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-03",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.62,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7020.29,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1369.02,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-03",
+      "transaction_type": "debit",
+      "description": "To EUR",
+      "amount": {
+        "value": 19.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7001.29,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1350.02,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-03",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7003.29,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1352.02,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-08",
+      "transaction_type": "credit",
+      "description": "Transfer from ENDA PHILIP CULLIVAN",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7053.29,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1402.02,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-08",
+      "transaction_type": "credit",
+      "description": "Transfer from ENDA PHILIP CULLIVAN",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7103.29,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1452.02,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-12",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.5,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7104.79,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1453.52,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-13",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7105.59,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1454.32,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-13",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7106.39,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1455.12,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-17",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.64,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7108.03,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1456.76,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-17",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.62,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7109.65,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1458.38,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-19",
+      "transaction_type": "debit",
+      "description": "To EUR",
+      "amount": {
+        "value": 8.3,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7101.35,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1450.08,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-21",
+      "transaction_type": "credit",
+      "description": "Exchanged to EUR",
+      "amount": {
+        "value": 1.27,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7102.62,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1451.35,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-24",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.7,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7104.32,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1453.05,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-26",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.1,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7104.42,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1453.15,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-27",
+      "transaction_type": "credit",
+      "description": "Transfer from JOSEPH MASTERSON",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7154.42,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1503.15,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-06-30",
+      "transaction_type": "credit",
+      "description": "Transfer from MAJELLA PATRICIA LYNCH",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7204.42,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1553.15,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-01",
+      "transaction_type": "credit",
+      "description": "Transfer from Clare Anne Oshea",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7254.42,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1603.15,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-03",
+      "transaction_type": "credit",
+      "description": "Transfer from RUTH MARY LILLIS",
+      "amount": {
+        "value": 50.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7304.42,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1653.15,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-05",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.4,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7305.82,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1654.55,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-06",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7307.82,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1656.55,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-06",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7309.82,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1658.55,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-10",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7311.82,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1660.55,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-10",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 2.0,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7313.82,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1662.55,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-10",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 1.44,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7315.26,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1663.99,
+        "currency": "EUR"
+      }
+    },
+    {
+      "transactions_date": "2025-07-11",
+      "transaction_type": "credit",
+      "description": "To EUR Big trip",
+      "amount": {
+        "value": 0.8,
+        "currency": "EUR"
+      },
+      "balance_after_statement": {
+        "value": 7316.06,
+        "currency": "EUR"
+      },
+      "balance_after_calculated": {
+        "value": 1664.79,
+        "currency": "EUR"
+      }
+    }
+  ]
+}
