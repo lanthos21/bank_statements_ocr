@@ -11,6 +11,12 @@ BANK_PATTERNS = {
 }
 
 
+# --- Revolut currencies ---
+CURRENCIES = {
+    "GBP", "USD", "AED", "AUD", "BGN", "CAD", "CHF", "CZK", "DKK", "EUR",
+    "HKD", "HUF", "ILS", "ISK", "JPY", "MXN", "NOK", "NZD", "PLN", "QAR",
+    "RON", "RSD", "SAR", "SEK", "SGD", "THB", "TRY", "ZAR", "KRW", "COP",
+    "PHP", "INR", "CLP"
+}
 
-# revolut currencies
-# GBP, USD, AED, AUD, BGN, CAD, CHF, CZK, DKK, EUR, HKD, HUF, ILS, ISK, JPY, MXN, NOK, NZD, PLN, QAR, RON, RSD, SAR, SEK, SGD, THB, TRY, ZAR, KRW, COP, PHP, INR, CLP
+

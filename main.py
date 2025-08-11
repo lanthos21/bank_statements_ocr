@@ -6,10 +6,12 @@ from ocr.detect_bank import detect_bank_provider
 
 def main():
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut euro with pockets.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\downloadStatement v2.pdf"
-    # bank_code = "REVOLUT"     # could be auto-detected
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut euro with pockets.pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut gbp.pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency2.pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency.pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut spanish.pdf"
 
     bank_code, conf, method = detect_bank_provider(pdf_path)
     if not bank_code:
@@ -21,7 +23,7 @@ def main():
     account_type = "Current Account"
 
     ocr_settings = OCR_SETTINGS[bank_code]
-    raw_ocr = ocr_pdf_to_raw_data(pdf_path, ocr_settings)
+    raw_ocr = ocr_pdf_to_raw_data(pdf_path, ocr_settings, bank_code=bank_code)
 
     # 🔹 Save raw OCR lines for debugging
     debug_txt_path = Path("results") / (Path(pdf_path).stem + "_ocr_dump.txt")

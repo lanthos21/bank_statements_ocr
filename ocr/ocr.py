@@ -1,8 +1,7 @@
 import fitz, cv2, numpy as np, pandas as pd, pytesseract
 from PIL import Image, ImageEnhance
-
-from ocr.helpers import PreprocessSettings, TesseractSettings, OcrProfile
-
+from ocr.helper_classes import PreprocessSettings, TesseractSettings, OcrProfile
+from ocr.detect_currency import detect_page_currency_from_text
 
 def render_page_to_image(doc, page_num: int, dpi: int) -> np.ndarray:
     page = doc.load_page(page_num)
@@ -61,34 +60,53 @@ def ocr_image_with_positions(img: np.ndarray, ts: TesseractSettings, tesseract_h
     return df
 
 
-def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile) -> dict:
+def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | None = None) -> dict:
     doc = fitz.open(pdf_path)
     pages_output = []
-    for page_num in range(doc.page_count):
-        base = render_page_to_image(doc, page_num, profile.preprocess.dpi)
-        processed = preprocess_image(base, profile.preprocess)
-        df = ocr_image_with_positions(processed, profile.tesseract, profile.preprocess.tesseract_handles_threshold)
+    try:
+        for page_num in range(doc.page_count):
+            page = doc.load_page(page_num)
 
-        lines_output = []
-        for ln in sorted(df["line_num"].unique()):
-            line_df = df[df["line_num"] == ln].sort_values(by="left")
-            if profile.post_line_hook is not None:
-                line_df = profile.post_line_hook(line_df, processed)
+            # 🔹 Currency detection from PDF text (fast, no OCR)
+            cur, cur_method, cur_conf = (None, "unknown", 0.0)
+            if bank_code:
+                c, m, cf = detect_page_currency_from_text(page, bank_code)
+                cur, cur_method, cur_conf = c, m, cf
 
-            words = line_df.to_dict(orient="records")
-            line_text = " ".join(w["text"] for w in words)
-            line_y = int(words[0]["top"]) if words else None
+            # Continue with your existing raster + OCR (if you still need OCR)
+            base = render_page_to_image(doc, page_num, profile.preprocess.dpi)
+            processed = preprocess_image(base, profile.preprocess)
+            df = ocr_image_with_positions(
+                processed,
+                profile.tesseract,
+                profile.preprocess.tesseract_handles_threshold
+            )
 
-            lines_output.append({
-                "line_num": int(ln),
-                "y": line_y,
-                "line_text": line_text,
-                "words": words
+            lines_output = []
+            for ln in sorted(df["line_num"].unique()):
+                line_df = df[df["line_num"] == ln].sort_values(by="left")
+                if profile.post_line_hook is not None:
+                    line_df = profile.post_line_hook(line_df, processed)
+
+                words = line_df.to_dict(orient="records")
+                line_text = " ".join(w["text"] for w in words)
+                line_y = int(words[0]["top"]) if words else None
+
+                lines_output.append({
+                    "line_num": int(ln),
+                    "y": line_y,
+                    "line_text": line_text,
+                    "words": words
+                })
+
+            pages_output.append({
+                "page_number": page_num + 1,
+                "currency": cur,
+                "currency_detect_method": cur_method,
+                "currency_confidence": round(cur_conf, 2),
+                "lines": lines_output
             })
+    finally:
+        doc.close()
 
-        pages_output.append({
-            "page_number": page_num + 1,
-            "lines": lines_output
-        })
-    doc.close()
     return {"file_name": pdf_path.split("\\")[-1], "pages": pages_output}

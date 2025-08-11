@@ -1,5 +1,5 @@
-from ocr.settings.boi_current import OCR_SETTINGS as BOI_SETTINGS
-from ocr.settings.revolut import OCR_SETTINGS as REVOLUT_SETTINGS
+from ocr.model_settings import BOI_SETTINGS
+from ocr.model_settings import REVOLUT_SETTINGS
 
 OCR_SETTINGS = {
     "BOI": BOI_SETTINGS,
@@ -7,12 +7,12 @@ OCR_SETTINGS = {
 }
 
 
-from parsers.boi_current import parse_boi_statement
-from parsers.revolut import parse_revolut_statement
+from parsers.boi_current import parse_statement
+from parsers.revolut import parse_statement
 
 BANK_PARSERS = {
-    "BOI": parse_boi_statement,
-    "REVOLUT": parse_revolut_statement,
+    "BOI": parse_statement,
+    "REVOLUT": parse_statement,
 }
 
 

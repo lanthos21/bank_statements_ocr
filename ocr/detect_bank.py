@@ -33,6 +33,7 @@ def detect_bank_provider(pdf_path: str) -> tuple[str|None, float, str]:
             raw.append(doc.load_page(i).get_text("text"))
         except Exception:
             pass
+    print(raw)
     bank, conf = _match_bank("\n".join(raw))
     if bank:
         doc.close()

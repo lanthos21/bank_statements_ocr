@@ -3,26 +3,8 @@ import pandas as pd
 from datetime import datetime
 from utils import parse_currency, parse_date
 
-"""
-Bank of Ireland statement parsing module.
 
-This module extracts structured data from OCR-processed BOI statement PDFs.
-It has four main functions:
-
-1. `parse_boi_statement`: Entry point that extracts metadata and transaction list.
-2. `parse_boi_transactions_from_coords`: Loops through pages to extract transaction rows 
-   based on detected table column positions and value alignment.
-3. `detect_column_positions_from_lines`: Locates the table header ("Payments - in", etc.)
-   on each page to determine column boundaries and the starting line of transactions.
-4. `categorise_amount_by_right_edge`: Classifies amounts (in/out/balance) by proximity
-   to the column headers on the right edge of words.
-
-The logic is built to handle multi-page statements with varying layouts and gracefully skip
-non-transaction pages.
-"""
-
-
-def detect_column_positions_from_lines(lines: list[dict]) -> tuple[dict, int, int]:
+def detect_column_positions(lines: list[dict]) -> tuple[dict, int, int]:
     """Locate column headers like 'Payments - in', 'Payments - out', 'Balance'"""
     header_positions = {}
     header_start_idx = None
@@ -79,7 +61,7 @@ def categorise_amount_by_right_edge(x1, header_positions, margin=100):
 
 def extract_opening_balance_and_start_date(pages: list[dict]) -> tuple[float | None, str | None]:
     for page in pages:
-        header_result = detect_column_positions_from_lines(page["lines"])
+        header_result = detect_column_positions(page["lines"])
         if not header_result:
             continue
 
@@ -119,8 +101,7 @@ def extract_opening_balance_and_start_date(pages: list[dict]) -> tuple[float | N
     return None, None
 
 
-
-def extract_iban_from_lines(pages: list[dict]) -> str | None:
+def extract_iban(pages: list[dict]) -> str | None:
     iban_pattern = re.compile(r'\b([A-Z]{2}\d{2}[A-Z0-9]{11,30})\b')
 
     for page in pages:
@@ -146,7 +127,7 @@ def extract_iban_from_lines(pages: list[dict]) -> str | None:
     return None
 
 
-def parse_boi_transactions_from_coords(
+def parse_transactions(
     pages: list[dict],
     opening_balance_cents: int | None = None,
     iban: str | None = None
@@ -175,7 +156,7 @@ def parse_boi_transactions_from_coords(
     for page_num, page in enumerate(pages):
         print(f"\n📄 Processing Page {page_num + 1}")
         lines = page["lines"]
-        result = detect_column_positions_from_lines(lines)
+        result = detect_column_positions(lines)
         if result is None:
             print(f"⚠️ Skipping Page {page_num + 1} — no header row found")
             continue
@@ -254,13 +235,13 @@ def parse_boi_transactions_from_coords(
     return all_transactions
 
 
-def parse_boi_statement(raw_ocr, client="Unknown", account_type="Unknown"):
+def parse_statement(raw_ocr, client="Unknown", account_type="Unknown"):
     """Main entry point: Parses BOI statement from OCR."""
     full_text = "\n".join("\n".join(line["line_text"] for line in page["lines"]) for page in raw_ocr["pages"])
 
 
     # Extract metadata
-    iban = extract_iban_from_lines(raw_ocr["pages"])
+    iban = extract_iban(raw_ocr["pages"])
     currency = "GBP" if iban and iban.upper().startswith("GB") else "EUR"
     bic_match = re.search(r"Bank\s+Identifier\s+Code\s+([A-Z]{6}[A-Z0-9]{2,5})", full_text, re.IGNORECASE)
     bic_value = bic_match.group(1).strip() if bic_match else None
@@ -271,7 +252,7 @@ def parse_boi_statement(raw_ocr, client="Unknown", account_type="Unknown"):
     end_date = parse_date(statement_date_match.group(1)) if statement_date_match else None
 
     opening_balance_cents = int(round(opening_balance * 100)) if opening_balance else None
-    transactions = parse_boi_transactions_from_coords(raw_ocr["pages"], opening_balance_cents=opening_balance_cents, iban=iban)
+    transactions = parse_transactions(raw_ocr["pages"], opening_balance_cents=opening_balance_cents, iban=iban)
 
 
     return {

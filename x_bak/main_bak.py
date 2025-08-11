@@ -1,13 +1,13 @@
 import json
 from pathlib import Path
 from ocr import ocr_pdf_to_raw_data
-from parsers.boi_current import parse_boi_statement
-from parsers.revolut import parse_revolut_statement
+from parsers.boi_current import parse_statement
+from parsers.revolut import parse_statement
 
 
 BANK_PARSERS = {
-    "BOI": parse_boi_statement,
-    "REVOLUT": parse_revolut_statement,
+    "BOI": parse_statement,
+    "REVOLUT": parse_statement,
 }
 
 def main():

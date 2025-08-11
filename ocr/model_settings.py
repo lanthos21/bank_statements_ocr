@@ -1,6 +1,6 @@
-from ocr.helpers import OcrProfile, PreprocessSettings, TesseractSettings
+from ocr.helper_classes import OcrProfile, PreprocessSettings, TesseractSettings
 
-OCR_SETTINGS = OcrProfile(
+BOI_SETTINGS = OcrProfile(
     name="BOI",
     preprocess=PreprocessSettings(
         dpi=400,
@@ -11,6 +11,16 @@ OCR_SETTINGS = OcrProfile(
         enhance_contrast=True,
         emphasize_dots_dilate=True,
         tesseract_handles_threshold=False,
+    ),
+    tesseract=TesseractSettings(oem=1, psm=6, lang="eng"),
+)
+
+REVOLUT_SETTINGS = OcrProfile(
+    name="REVOLUT",
+    preprocess=PreprocessSettings(
+        dpi=225,
+        use_unsharp_mask=True,
+        tesseract_handles_threshold=True,
     ),
     tesseract=TesseractSettings(oem=1, psm=6, lang="eng"),
 )

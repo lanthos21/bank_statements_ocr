@@ -1,4 +1,4 @@
-from datetime import datetime
+from lang import MONTHS_MAP
 import re
 
 def parse_currency(value: str, strip_currency: bool = True) -> float | None:
@@ -17,7 +17,7 @@ def parse_currency(value: str, strip_currency: bool = True) -> float | None:
             return None
 
         # Step 0: Optionally strip leading currency symbols (€, £, $)
-        if strip_currency:
+        if strip_currency and value and not value[0].isdigit():
             value = value[1:]
 
         # Step 1: Keep only digits, dots, commas, minus
@@ -36,7 +36,7 @@ def parse_currency(value: str, strip_currency: bool = True) -> float | None:
         return None
 
 
-def parse_date(date_str: str) -> str | None:
+def parse_dateOLD(date_str: str) -> str | None:
     """
     Convert a date string like '25 Jul 2023' or '25 July 2023' into ISO format (YYYY-MM-DD).
     Tries both abbreviated and full month names.
@@ -48,3 +48,33 @@ def parse_date(date_str: str) -> str | None:
             continue
     return None
 
+from datetime import datetime
+import unicodedata
+
+
+def strip_accents(s: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", s)
+                   if unicodedata.category(c) != "Mn")
+
+def parse_date(date_str: str) -> str | None:
+    """
+    Parse date strings like:
+    '25 Jul 2023', '12 dic 2024', '01 ene 2025', '10 oct 2025', '15 déc 2024'
+    Returns 'YYYY-MM-DD' or None if not recognised.
+    """
+    if not date_str:
+        return None
+    parts = date_str.strip().split()
+    if len(parts) != 3:
+        return None
+
+    day, month_str, year = parts
+    month_key = strip_accents(month_str).lower()
+    month_num = MONTHS_MAP.get(month_key)
+    if not month_num:
+        return None
+
+    try:
+        return datetime(int(year), month_num, int(day)).strftime("%Y-%m-%d")
+    except ValueError:
+        return None
