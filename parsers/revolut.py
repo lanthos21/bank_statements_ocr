@@ -41,7 +41,9 @@ def detect_column_positions(lines: List[dict]) -> tuple[dict, int, int]:
                 elif any(text == k or k in text for k in HEADER_SYNONYMS["description"]):
                     positions["description"] = x
                 elif any(text == k or k in text for k in HEADER_SYNONYMS["balance"]):
-                    positions["balance"] = x
+                    # store RIGHT edge of the Balance header cell; fall back to left if width missing
+                    w = int(word.get("width", 0))
+                    positions["balance"] = x + w if w > 0 else x
 
                 if i + 1 < len(words):
                     combined = f"{text} {words[i+1].get('text','').lower()}"
@@ -61,7 +63,7 @@ def detect_column_positions(lines: List[dict]) -> tuple[dict, int, int]:
     raise ValueError("❌ Could not find transaction header row.")
 
 
-def categorise_amount_by_left_edge(x1, header_positions, margin=60):
+def categorise_amount_by_left_edge(x1, header_positions, margin=60, width=None):
     """
     Classify an amount token into 'out' | 'in' | 'bal' by proximity to column left edges.
     """
@@ -71,7 +73,11 @@ def categorise_amount_by_left_edge(x1, header_positions, margin=60):
         pos = header_positions.get(k)
         if pos is None:
             continue
-        d = abs(x1 - int(pos))
+        # For balance, compare right edges
+        if k == "bal" and width is not None:
+            d = abs((x1 + int(width)) - int(pos))  # compare RIGHT edge
+        else:
+            d = abs(x1 - int(pos))                 # compare LEFT edge
         if d < best[1]:
             best = (k, d)
     return best[0] if best[1] <= margin else "unknown"
@@ -231,8 +237,7 @@ def group_transactions_by_currency(transactions: List[dict]) -> Dict[str, List[d
         if cur:
             buckets[cur].append(tx)
     for cur in buckets:
-        buckets[cur].sort(key=lambda t: (t.get("transactions_date") or "",
-                                         t.get("balance_after_statement", {}).get("value", 0.0)))
+        buckets[cur].sort(key=lambda t: t.get("seq", 0))
     return buckets
 
 
@@ -451,7 +456,7 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
             continue
 
         # For description slicing
-        amount_cols = [v for k, v in header_positions.items() if k in ("in", "out", "bal") and v is not None]
+        amount_cols = [v for k, v in header_positions.items() if k in ("in", "out") and v is not None]
         first_amount_x = min(amount_cols) if amount_cols else None
 
         # Iterate rows below header
@@ -464,7 +469,10 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
             df["line_text"] = line.get("line_text", "")
 
             df["amount"] = df["text"].apply(parse_currency)
-            df["category"] = df["left"].apply(lambda x: categorise_amount_by_left_edge(x, header_positions))
+            df["category"] = df.apply(
+                lambda r: categorise_amount_by_left_edge(r["left"], header_positions, width=r.get("width")),
+                axis=1
+            )
 
             # Require a date on the line
             date_match = re.search(r"\b(\d{1,2}) (\w{3,9}) (\d{4})\b", df["line_text"].iloc[0])
@@ -518,20 +526,21 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
 
             calculated_balance = round(running_balance_cents / 100.0, 2)
 
-            if not math.isclose(calculated_balance, float(balance), abs_tol=0.01):
-                discrepancy = round(float(balance) - calculated_balance, 2)
-                print("\n⚠️ BALANCE DISCREPANCY DETECTED")
-                print(f"📄 Page: {page_num + 1} | 💱 Currency: {current_currency}")
-                print(f"📆 Date: {transaction_date}")
-                print(f"📝 Description: {clean_desc}")
-                print(f"💸 Credit: {credit_amount:.2f} | Debit: {debit_amount:.2f}")
-                print(f"📊 Calculated Balance: {calculated_balance:.2f}")
-                print(f"📄 Statement Balance:  {float(balance):.2f}")
-                print(f"🧮 Discrepancy: {discrepancy:+.2f}")
-                print(f"🔤 OCR Line: {df['line_text'].iloc[0]}")
+            # if not math.isclose(calculated_balance, float(balance), abs_tol=0.01):
+            #     discrepancy = round(float(balance) - calculated_balance, 2)
+            #     print("\n⚠️ BALANCE DISCREPANCY DETECTED")
+            #     print(f"📄 Page: {page_num + 1} | 💱 Currency: {current_currency}")
+            #     print(f"📆 Date: {transaction_date}")
+            #     print(f"📝 Description: {clean_desc}")
+            #     print(f"💸 Credit: {credit_amount:.2f} | Debit: {debit_amount:.2f}")
+            #     print(f"📊 Calculated Balance: {calculated_balance:.2f}")
+            #     print(f"📄 Statement Balance:  {float(balance):.2f}")
+            #     print(f"🧮 Discrepancy: {discrepancy:+.2f}")
+            #     print(f"🔤 OCR Line: {df['line_text'].iloc[0]}")
 
             amt_value = credit_amount if credit_amount > 0 else debit_amount
             all_transactions.append({
+                "seq": seq,
                 "transactions_date": transaction_date,
                 "transaction_type": "credit" if credit_amount > 0 else "debit",
                 "description": clean_desc,
@@ -548,16 +557,9 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
                     "currency": current_currency,
                 },
             })
+            seq += 1
 
     return all_transactions
-
-def debug_print_currency_summary(currencies: dict[str, dict]) -> None:
-    total_tx = sum(len(sec.get("transactions", [])) for sec in currencies.values())
-    print(f"\n📄 TOTAL REVOLUT TRANSACTIONS: {total_tx}")
-    for cur in sorted(currencies.keys()):
-        mi = currencies[cur]["money_in_total"]["value"]
-        mo = currencies[cur]["money_out_total"]["value"]
-        print(f"  • {cur}: IN {mi:.2f} | OUT {mo:.2f}")
 
 
 def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unknown"):
@@ -590,7 +592,6 @@ def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unkno
     # 4) group and build per-currency sections
     buckets = group_transactions_by_currency(transactions)
     currencies = build_currency_sections(buckets, summaries)
-    debug_print_currency_summary(currencies)
 
     # 5) global dates from transactions (language-agnostic)
     if transactions:
