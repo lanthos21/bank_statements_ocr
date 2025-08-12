@@ -10,10 +10,10 @@ def main():
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut gbp.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut spanish.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut euro with pockets.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency2.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\downloadStatement v2.pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency2.pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf"
 
     bank_code, conf, method = detect_bank_provider(pdf_path)
     if not bank_code:

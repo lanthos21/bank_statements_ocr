@@ -7,12 +7,12 @@ OCR_SETTINGS = {
 }
 
 
-from parsers.boi_current import parse_statement
-from parsers.revolut import parse_statement
+from parsers.boi_current import parse_statement as boi_parser
+from parsers.revolut import parse_statement as revolut_parser
 
 BANK_PARSERS = {
-    "BOI": parse_statement,
-    "REVOLUT": parse_statement,
+    "BOI": boi_parser,
+    "REVOLUT": revolut_parser,
 }
 
 

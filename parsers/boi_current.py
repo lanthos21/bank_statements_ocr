@@ -17,50 +17,46 @@ def detect_column_positions(lines: list[dict]) -> tuple[dict, int, int] | None:
     """
     Locate BOI headers like 'Payments - in', 'Payments - out', 'Balance'.
     Returns (header_positions, header_start_idx, len(lines)) or None if not found.
-    Stores RIGHT edges for in/out/bal columns.
+
+    NOTE: BOI amounts are typically RIGHT-JUSTIFIED; we store right edges for
+    in/out/bal columns.
     """
+    header_positions = {}
+    header_start_idx = None
 
-    def norm(s: str) -> str:
-        # normalise dashes and whitespace
-        return (s or "").lower().replace("–", "-").replace("—", "-")
-
-    def find_phrase_x_right(line: dict, last_token: str, pattern: str) -> int | None:
-        """
-        If the line text matches `pattern`, return the RIGHT edge (left+width)
-        of the word whose text contains `last_token` (e.g., 'out' or 'in').
-        """
-        text = norm(line.get("line_text", ""))
-        if not re.search(pattern, text):
-            return None
-        for w in reversed(line.get("words", []) or []):
-            t = norm(w.get("text", ""))
-            if last_token in t:  # tolerate punctuation around token
-                return int(w.get("left", 0)) + int(w.get("width", 0))
+    def find_phrase_x_right(line, phrase: str) -> int | None:
+        words = line.get("words", [])
+        parts = phrase.lower().split()
+        for i in range(len(words) - len(parts) + 1):
+            if all(parts[j] in (words[i + j].get("text", "").lower()) for j in range(len(parts))):
+                w_last = words[i + len(parts) - 1]
+                left = int(w_last.get("left", 0))
+                width = int(w_last.get("width", 0))
+                return left + width  # RIGHT edge
         return None
 
-    for idx, line in enumerate(lines or []):
-        words = line.get("words", []) or []
-        if not words:
+    for idx, line in enumerate(lines):
+        if not line.get("words"):
             continue
 
-        # tolerate: Payments - out / Payments–out / Payments out …
-        out_right = find_phrase_x_right(line, "out", r"payments\s*-?\s*out")
-        in_right  = find_phrase_x_right(line, "in",  r"payments\s*-?\s*in")
+        right_out = find_phrase_x_right(line, "Payments - out")
+        right_in  = find_phrase_x_right(line, "Payments - in")
+        right_bal = None
+        for w in line.get("words", []):
+            t = (w.get("text") or "").lower()
+            if "balance" in t:
+                right_bal = int(w.get("left", 0)) + int(w.get("width", 0))
+                break
 
-        bal_right = None
-        if re.search(r"\bbalance\b", norm(line.get("line_text", ""))):
-            for w in words:
-                t = norm(w.get("text", ""))
-                if "balance" in t:
-                    bal_right = int(w.get("left", 0)) + int(w.get("width", 0))
-                    break
+        if right_out and right_in and right_bal:
+            header_positions = {"out": right_out, "in": right_in, "bal": right_bal}
+            header_start_idx = idx
+            break
 
-        if out_right and in_right and bal_right:
-            return ({"out": out_right, "in": in_right, "bal": bal_right}, idx, len(lines))
+    if header_start_idx is None:
+        return None
 
-    # Optional: temporary debug print to see why we missed it
-    # print("⚠️ Header row not found on this page")
-    return None
+    return header_positions, header_start_idx, len(lines)
 
 
 def categorise_amount_by_right_edge(x_right: int, header_positions: dict, margin: int = 80) -> str:
@@ -149,6 +145,9 @@ def parse_transactions(
 
         header_positions, start_idx, end_idx = header
 
+        # keep the last date seen on this page/section
+        last_seen_date: Optional[str] = None
+
         for line in lines[start_idx + 1 : end_idx]:
             words = line.get("words", []) or []
             if not words:
@@ -166,13 +165,17 @@ def parse_transactions(
             df["amount"] = df["text"].apply(lambda v: parse_currency(v, strip_currency=False))
             df["category"] = df["right"].apply(lambda x: categorise_amount_by_right_edge(x, header_positions))
 
-            # Date for this row (BOI uses English months)
-            date_match = re.search(r"\b(\d{1,2}) (\w{3,9}) (\d{4})\b", df["line_text"].iloc[0])
-            if not date_match:
+            # --- NEW: carry-forward date ---
+            m = re.search(r"\b(\d{1,2}) (\w{3,9}) (\d{4})\b", df["line_text"].iloc[0])
+            if m:
+                parsed = parse_date(m.group(0))
+                if parsed:
+                    last_seen_date = parsed
+            transaction_date = last_seen_date
+            if transaction_date is None:
+                # we still haven't encountered a date yet; skip until we do
                 continue
-            transaction_date = parse_date(date_match.group(0))
-            if not transaction_date:
-                continue
+            # --- end NEW ---
 
             in_series  = df[df["category"] == "in"]["amount"]
             out_series = df[df["category"] == "out"]["amount"]
@@ -187,10 +190,10 @@ def parse_transactions(
 
             stmt_balance = float(bal_series.iloc[0]) if not bal_series.empty and pd.notna(bal_series.iloc[0]) else None
 
-            # Description: everything between the date and the first amount column.
-            # For BOI we can be pragmatic: just drop the date text from the line.
+            # description: drop the date only if present
             clean_desc = df["line_text"].iloc[0]
-            clean_desc = clean_desc.replace(date_match.group(0), "").strip()
+            if m:
+                clean_desc = clean_desc.replace(m.group(0), "").strip()
 
             all_transactions.append({
                 "seq": seq,
