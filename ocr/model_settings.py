@@ -24,3 +24,23 @@ REVOLUT_SETTINGS = OcrProfile(
     ),
     tesseract=TesseractSettings(oem=1, psm=6, lang="eng"),
 )
+
+N26_SETTINGS = OcrProfile(
+    name="N26",
+    preprocess=PreprocessSettings(
+        dpi=225,
+        use_adaptive_threshold=False,   # ← important
+        morph_close=False,              # ← avoid column bleeding
+        resize_fx=1.2, resize_fy=1.2,
+        use_unsharp_mask=True,          # mild clarity only
+        use_sharpen_kernel=False,
+        enhance_contrast=False,
+        emphasize_dots_dilate=False,
+        tesseract_handles_threshold=True,  # feed grayscale; no Otsu beforehand
+    ),
+    # psm 4 (single column, ragged right) works well on table-like pages.
+    # If you still miss lines, try psm=6. Keep oem=1.
+    tesseract=TesseractSettings(oem=1, psm=6, lang="eng"),
+)
+
+

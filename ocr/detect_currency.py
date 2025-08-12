@@ -6,6 +6,8 @@ from constants import CURRENCIES
 def detect_page_currency_from_text(page, bank_code: str):
     if bank_code == "BOI":
         return "EUR", "rule", 1.0
+    if bank_code == "N26":
+        return "EUR", "rule", 1.0
 
     w, h = page.rect.width, page.rect.height
     header_rect = fitz.Rect(0, 0, w, h * 0.18)  # top 18% full width

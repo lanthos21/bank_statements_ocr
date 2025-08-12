@@ -1,13 +1,16 @@
 
 # --- Detect bank provider ---
 BANK_PATTERNS = {
+    "N26": [
+        r"\bNTSB"
+    ],
     "REVOLUT": [
         r"\bRevolut\b", r"Revolut Bank UAB",
     ],
     "BOI": [
         r"\bBank of Ireland\b", r"\bBOFI\b"
     ],
-    # add others as needed...
+
 }
 
 

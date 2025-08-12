@@ -73,6 +73,8 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
                 c, m, cf = detect_page_currency_from_text(page, bank_code)
                 cur, cur_method, cur_conf = c, m, cf
 
+            # print(f"cur, cur_method, cur_conf = {c}, {m}, {cf}")
+
             # Continue with your existing raster + OCR (if you still need OCR)
             base = render_page_to_image(doc, page_num, profile.preprocess.dpi)
             processed = preprocess_image(base, profile.preprocess)
