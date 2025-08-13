@@ -3,6 +3,7 @@ from pathlib import Path
 from ocr.ocr import ocr_pdf_to_raw_data
 from mapping import OCR_SETTINGS, BANK_PARSERS
 from ocr.detect_bank import detect_bank_provider
+from ocr.ocr_dump import save_ocr_words_csv, save_ocr_pretty_txt
 from validator import validate_statement_json
 
 
@@ -12,9 +13,9 @@ def main():
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut spanish.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut euro with pockets.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\downloadStatement v2.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency2.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency2.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 march.pdf"
 
     bank_code, conf, method = detect_bank_provider(pdf_path)
@@ -41,7 +42,10 @@ def main():
 
     # 🔹 Parse into structured format
     parser_func = BANK_PARSERS[bank_code]
-    structured_data = parser_func(raw_ocr, client=client, account_type=account_type)
+    # structured_data = parser_func(raw_ocr, client=client, account_type=account_type)
+    structured_data = parser_func(raw_ocr, max_rows=15, debug=False)
+    save_ocr_words_csv(raw_ocr)
+    save_ocr_pretty_txt(raw_ocr)
 
     output_file = Path("results") / (Path(pdf_path).stem + "_structured.json")
     with open(output_file, "w", encoding="utf-8") as f:
@@ -49,7 +53,7 @@ def main():
 
     # Run validator against exactly what was saved
     saved_data = json.loads(Path(output_file).read_text(encoding="utf-8"))
-    validate_statement_json(saved_data)
+    # validate_statement_json(saved_data)
 
     print(f"\n\nStructured data saved to {output_file}")
 

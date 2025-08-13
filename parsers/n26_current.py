@@ -1,459 +1,443 @@
-# n26_current.py — single-pass OCR parser for N26 using header X-positions
-# Works with your OCR module output: raw_ocr["pages"][i]["lines"][j]["words"][k] dicts
-
+# n26_current.py — robust N26 extractor (header-first; cluster fallback close-to-amount)
+from __future__ import annotations
 import re
-from collections import defaultdict
-from typing import Optional, Dict, List, Any, Tuple
-
+from typing import Dict, List, Optional, Tuple
 import pandas as pd
-from utils import parse_currency, parse_date
 
-DEBUG = True
+# ---------- regexes ----------
+DATE_RE   = re.compile(r"\b(\d{1,2})[./\-](\d{1,2})[./\-](\d{2,4})\b")
+AMOUNT_RE = re.compile(r"(?P<sign>[+\-−])?\s*(?P<body>\d{1,3}(?:[.\s\u00A0\u2009\u202F]\d{3})*[.,]\d{2})\s*€")
+FURNITURE = re.compile(r"^(?:value\s*date\b|mastercard\b)$", re.I)
 
-# ---------- Patterns ----------
-# replace your patterns with these
-DATE_DOT_REGEX = re.compile(r"\b\d{1,2}\s*[./]\s*\d{1,2}\s*[./]\s*\d{2,4}\b")
+# ---------- utils ----------
+def _med_height(df: pd.DataFrame) -> float:
+    return float(df["height"].median()) if ("height" in df and not df["height"].empty) else 18.0
 
-# Accepts "€ 1.234,56", "1.234,56 €", "−1 234,56", "1 234,56", etc.
-AMOUNT_CHUNK_REGEX = re.compile(
-    r"(?:€\s*)?[-+−]?\s*\d{1,3}(?:[.\s \u00A0\u2009\u202F]\d{3})*[.,]\d{2}\s*(?:€)?"
-)
-
-
-DATE_ANYWHERE_RE = re.compile(
-    r"\b(\d{1,2}\s*[\.,/-]\s*\d{1,2}\s*[\.,/-]\s*\d{2,4})\b"
-)
-
-# Noise / furniture
-FOOTER_RE      = re.compile(r"\buntil\s+\d+\s*/\s*\d+\b", re.IGNORECASE)
-VALUE_DATE_RE  = re.compile(r"\bvalue\s+date\s+\d{1,2}[./]\d{1,2}[./]\d{2,4}\b", re.IGNORECASE)
-SUMMARY_ROW_RE = re.compile(r"^\s*(incoming|outgoing|previous)\s*$", re.IGNORECASE)
-
-# Column tolerance
-DATE_WIN   = 40
-AMOUNT_WIN = 140
-
-# ---------- OCR helpers ----------
 def _norm(s: str) -> str:
-    if not s:
-        return ""
-    s = (s.replace("\u00A0", " ")
-           .replace("\u2009", " ")
-           .replace("\u202F", " ")
-           .replace("−", "-").replace("–", "-").replace("—", "-")
-           .replace("·", ".").replace("•", "."))
-    s = re.sub(r"\s{2,}", " ", s)
-    return s.strip()
+    if not s: return ""
+    return (s.replace("\u00A0"," ")
+             .replace("\u2009"," ")
+             .replace("\u202F"," ")
+             .replace("−","-")
+             .strip())
 
-def _extract_date_from_df_col(df: pd.DataFrame, date_right: int) -> Optional[str]:
-    if df.empty or date_right < 0:
-        return None
-    mask = (df["right"] >= date_right - DATE_WIN) & (df["right"] <= date_right + DATE_WIN)
-    if not mask.any():
-        return None
-    txt = _norm(" ".join(df.loc[mask, "text"].astype(str).tolist()))
-    # normalize separators and spaces
-    txt = txt.replace(",", ".").replace("•", ".")
-    m = DATE_ANY_SEP_RE.search(txt)
-    if not m:
-        return None
-    dd, mm, yy = re.findall(r"\d+", m.group(0))[:3]
-    cand = f"{dd}.{mm}.{yy}"
-    return parse_date(cand) or None
-
-
-def _extract_date_anywhere(text: str) -> Optional[str]:
-    if not text:
-        return None
-    norm = (
-        text.replace("•", ".")
-            .replace(",", ".")
-            .replace(" ", "")
-    )
-    m = DATE_ANYWHERE_RE.search(norm)
-    if m:
-        return m.group(1)
-    return None
-
-
-def _words_df_from_page(page: dict) -> pd.DataFrame:
-    rows: List[dict] = []
-    for line in page.get("lines", []) or []:
-        for w in line.get("words", []) or []:
+def _page_words_to_df(page: dict) -> pd.DataFrame:
+    rows = []
+    for ln in page.get("lines", []) or []:
+        for w in ln.get("words", []) or []:
             rows.append(w)
     if not rows:
-        return pd.DataFrame(columns=["text", "left", "top", "width", "height", "right", "bottom"])
+        return pd.DataFrame(columns=[
+            "text","left","top","width","height","right","bottom","cy",
+            "block_num","par_num","line_num","word_num"
+        ])
     df = pd.DataFrame(rows).copy()
-    for c in ("left", "top", "width", "height"):
-        if c in df.columns:
-            df[c] = df[c].astype(int)
-    df["right"] = df["left"] + df["width"]
-    df["bottom"] = df["top"] + df["height"]
-    df["text"] = df["text"].astype(str)
+    for c in ("left","top","width","height"):
+        if c in df.columns: df[c] = df[c].astype(int)
+    for c in ("block_num","par_num","line_num","word_num"):
+        if c not in df.columns: df[c] = -1
+    df["right"]  = df["left"] + df["width"]
+    df["bottom"] = df["top"]  + df["height"]
+    df["cy"]     = df["top"] + df["height"] * 0.5
+    df["text"]   = df["text"].astype(str)
     return df
 
-def _find_header_positions_in_page(page: dict) -> Optional[Dict[str, int]]:
-    best = {"desc_left": None, "date_left": None, "date_right": None, "amount_left": None, "amount_right": None}
-    for line in page.get("lines", []) or []:
-        words = line.get("words", []) or []
-        if not words:
-            continue
-        texts = [w.get("text", "").strip().lower() for w in words]
-
-        # Description
-        for i, t in enumerate(texts):
-            if t == "description" and best["desc_left"] is None:
-                w = words[i]; best["desc_left"] = int(w["left"])
-
-        # Booking Date (two tokens)
-        for i, t in enumerate(texts):
-            if t == "booking" and best["date_left"] is None:
-                w = words[i]; best["date_left"] = int(w["left"])
-            if t == "date":
-                w = words[i]
-                best["date_right"] = int(w["left"]) + int(w["width"])
-                if best["date_left"] is None:
-                    best["date_left"] = int(w["left"])
-
-        # Amount
-        for i, t in enumerate(texts):
-            if t == "amount":
-                w = words[i]
-                best["amount_left"]  = int(w["left"])
-                best["amount_right"] = int(w["left"]) + int(w["width"])
-    if best["amount_right"] is None:
-        return None
-    return best
-
-def _detect_columns_from_headers(raw_pages: List[dict]) -> Dict[str, int]:
-    hits: List[Dict[str, int]] = []
-    for p in raw_pages[:5]:
-        pos = _find_header_positions_in_page(p)
-        if pos:
-            hits.append(pos)
-    # collect a rough page width
-    max_right = 0
-    for p in raw_pages:
-        for ln in p.get("lines", []) or []:
-            for w in ln.get("words", []) or []:
-                r = int(w.get("left", 0)) + int(w.get("width", 0))
-                if r > max_right: max_right = r
-    page_right = max_right or 2200
-
-    if not hits:
-        cols = {"desc_left": 100, "date_left": -1, "date_right": -1, "amount_left": -1, "amount_right": -1,
-                "desc_max_right": int(page_right * 0.55)}
-        if DEBUG: print(f"[N26] GLOBAL COLUMNS (no-header): {cols}")
-        return cols
-
-    def med(key: str) -> Optional[int]:
-        vals = [h[key] for h in hits if h.get(key) is not None]
-        return int(pd.Series(vals).median()) if vals else None
-
-    desc_left = med("desc_left")
-    date_left = med("date_left")
-    date_right = med("date_right")
-    amount_left = med("amount_left")
-    amount_right = med("amount_right")
-
-    # ✅ Use date_right to define where description ends (safer),
-    #    else fall back to amount_right - 300.
-    if date_right is not None:
-        desc_max_right = max(0, int(date_right) - 20)
-    elif amount_right is not None:
-        desc_max_right = max(0, int(amount_right) - 300)
-    else:
-        desc_max_right = int(page_right * 0.55)
-
-    cols = {
-        "desc_left": desc_left if desc_left is not None else 100,
-        "date_left": -1 if date_left is None else int(date_left),
-        "date_right": -1 if date_right is None else int(date_right),
-        "amount_left": -1 if amount_left is None else int(amount_left),
-        "amount_right": -1 if amount_right is None else int(amount_right),
-        "desc_max_right": int(desc_max_right),
-    }
-    if DEBUG: print(f"[N26] GLOBAL COLUMNS: {cols}")
-    return cols
-
-
-# ---------- Tiny helpers ----------
-
-
-# put this near other regexes
-DATE_ANY_SEP_RE = re.compile(r"\b\d{1,2}\D{1,3}\d{1,2}\D{1,3}\d{2,4}\b")
-
-def _amount_from_tokens(tokens: List[str]) -> Optional[float]:
-    if not tokens:
-        return None
-    s = _norm(" ".join(t for t in tokens if t and str(t).strip()))
-    # 🚫 remove date substrings so "20.08.2024" can't become "20.08"
-    s = DATE_ANY_SEP_RE.sub(" ", s)
-    m = AMOUNT_CHUNK_REGEX.search(s)
-    if not m:
-        return None
-    v = parse_currency(m.group(0), strip_currency=False)
-    return float(v) if pd.notna(v) else None
-
-
-
-def _clean_desc_line(s: str) -> str:
-    if not s: return ""
-    s = VALUE_DATE_RE.sub("", s)
-    s = FOOTER_RE.sub("", s)
-    s = re.sub(r"\s{2,}", " ", s)
-    return s.strip(" •,-–—\t")
-
-# ---------- Core ----------
-def parse_n26_transactions_single_pass(pages: List[dict]) -> List[dict]:
+# ---------- header-by-words (preferred) ----------
+def _find_header_columns_by_words(pages: List[dict], debug=False) -> Optional[Dict[str,int]]:
     """
-    - Columns from header words (independent of vertical alignment).
-    - Primary anchors: (amount near amount column) AND (date anywhere on the line).
-    - Fallback anchors (if none on a page): (date anywhere) AND (amount anywhere to the right of desc_max_right + 40).
-    - Description from lines between anchors, using only words left of desc_max_right.
+    Robust header finder:
+      1) collect only header words: description / booking / date / amount
+      2) cluster by Y (same line)
+      3) pick the line that contains 'amount' and ('booking' or 'date')
+      4) compute column windows from *that* line only
     """
-    results: List[dict] = []
-    seq = 0
-    currency = "EUR"
+    header_words = {"description", "booking", "date", "amount"}
 
-    cols = _detect_columns_from_headers(pages)
-    desc_max_right = int(cols["desc_max_right"])
-    date_right  = int(cols.get("date_right", -1))
-    amount_right= int(cols.get("amount_right", -1))
-
-    for p_idx, page in enumerate(pages):
-        lines = page.get("lines", []) or []
-        if not lines:
-            if DEBUG: print(f"[N26] page {p_idx+1}: no lines")
+    for page_idx, page in enumerate(pages[:2]):
+        df = _page_words_to_df(page)
+        if df.empty:
             continue
 
-        line_dfs: List[pd.DataFrame] = []
+        # keep only possible header tokens
+        tok = df.assign(t=df["text"].str.strip().str.lower())
+        hdr = tok[tok["t"].isin(header_words)].copy()
+        if hdr.empty:
+            continue
+
+        # cluster by Y (tight: same printed line)
+        med_h = _med_height(hdr)
+        gap = max(6.0, med_h * 0.60)
+        hdr = hdr.sort_values("cy").reset_index(drop=True)
+
+        lines: List[pd.DataFrame] = []
+        start = 0
+        for i in range(1, len(hdr)):
+            if hdr.loc[i, "cy"] - hdr.loc[i-1, "cy"] > gap:
+                lines.append(hdr.iloc[start:i].sort_values("left"))
+                start = i
+        lines.append(hdr.iloc[start:].sort_values("left"))
+
+        # score lines; must have AMOUNT and (BOOKING or DATE)
+        candidates = []
         for ln in lines:
-            w = ln.get("words", []) or []
-            df = pd.DataFrame(w)
-            if df.empty:
-                df = pd.DataFrame(columns=["text", "left", "top", "width", "height", "right", "bottom"])
-            else:
-                for c in ("left", "top", "width", "height"):
-                    if c in df.columns:
-                        df[c] = df[c].astype(int)
-                df["right"] = df["left"] + df["width"]
-                df["bottom"] = df["top"] + df["height"]
-                df["text"] = df["text"].astype(str)
-            line_dfs.append(df)
+            words = set(ln["t"].tolist())
+            if "amount" in words and (("booking" in words) or ("date" in words)):
+                left_min  = int(ln["left"].min())
+                right_max = int((ln["left"] + ln["width"]).max())
+                cy_med    = float(ln["cy"].median())
+                width     = right_max - left_min
+                candidates.append((ln, width, left_min, right_max, cy_med))
 
-        anchors: List[Dict[str, Any]] = []
-
-        # ---- Pass A: collect date lines & amount lines separately ----
-        date_hits: List[Dict[str, Any]] = []
-        amt_hits: List[Dict[str, Any]]  = []
-
-        for idx, (ln, df) in enumerate(zip(lines, line_dfs)):
-            lt = _norm((ln.get("line_text") or "").strip())
-            if not lt:
-                continue
-
-            # For DATE discovery: do NOT skip "Value Date ..." lines.
-            skip_for_amount = SUMMARY_ROW_RE.match(lt) or VALUE_DATE_RE.search(lt)
-
-            if DEBUG:
-                lt = _norm((ln.get("line_text") or "").strip())
-                if any(ch.isdigit() for ch in lt):
-                    if '.' in lt or '/' in lt or '-' in lt:
-                        print(f"[DEBUG DATE CANDIDATE] {lt!r}")
-
-            # --- date anywhere on the line ---
-            found_date = _extract_date_from_df_col(df, date_right)
-            if found_date:
-                date_hits.append({"idx": idx, "date": found_date})
-
-            # --- amount: only if this line isn't a Value Date/Summary line ---
-            found_amt = None
-            if not skip_for_amount:
-                if amount_right >= 0 and not df.empty:
-                    mask_a = (df["right"] >= amount_right - AMOUNT_WIN) & (df["right"] <= amount_right + AMOUNT_WIN)
-                    tokens = df.loc[mask_a, "text"].astype(str).tolist()
-                    found_amt = _amount_from_tokens(tokens)
-                    if found_amt is None:
-                        mask2 = (df["right"] >= amount_right - (AMOUNT_WIN + 20)) & (
-                                    df["right"] <= amount_right + (AMOUNT_WIN + 20))
-                        tokens2 = df.loc[mask2, "text"].astype(str).tolist()
-                        found_amt = _amount_from_tokens(tokens2)
-
-                if found_amt is None and not df.empty:
-                    right_floor = max(desc_max_right + 20, 600)
-                    cand = df[df["right"] >= right_floor]
-                    found_amt = _amount_from_tokens(cand["text"].astype(str).tolist()) if not cand.empty else None
-
-                if found_amt is None:
-                    found_amt = _amount_from_tokens([lt])
-
-            if found_amt is not None:
-                amt_hits.append({"idx": idx, "amount": float(found_amt)})
-
-        # ---- Pass B: pair amount lines with the nearest previous date line (within small gap) ----
-        # Allow date and amount to be on separate consecutive lines (gap<=2).
-        max_gap = 2
-        di = 0
-        for ah in amt_hits:
-            i = ah["idx"]
-            # move date pointer up to the last date line not after i
-            while di < len(date_hits) and date_hits[di]["idx"] <= i:
-                di += 1
-            # candidates are date_hits[0..di-1]; pick the last one within gap
-            chosen = None
-            for dj in range(di - 1, -1, -1):
-                j = date_hits[dj]["idx"]
-                if 0 <= (i - j) <= max_gap:
-                    chosen = date_hits[dj]
-                    break
-                if j < i - max_gap:
-                    break
-            if chosen:
-                anchors.append({"idx": i, "date": chosen["date"], "amount": ah["amount"]})
-
-        if DEBUG:
-            print(f"[N26] page {p_idx+1}: date_hits={len(date_hits)} amt_hits={len(amt_hits)} paired_anchors={len(anchors)}")
-            for a in anchors[:3]:
-                print(f"       · anchor idx={a['idx']} date={a['date']} amount={a['amount']}")
-
-
-        if not anchors:
+        if not candidates:
+            # no good line on this page, try next page
             continue
 
-        # ---- Descriptions between anchors ----
-        prev_idx = -1
+        # choose widest header line (it spans Description .. Amount)
+        candidates.sort(key=lambda x: (-x[1], x[2]))
+        ln, _, _, _, cy_med = candidates[0]
 
-        def left_of_cut_text(_ln: dict, _df: pd.DataFrame) -> str:
-            if _df.empty: return ""
-            toks = _df[_df["right"] <= desc_max_right]["text"].astype(str).tolist()
-            if toks:
-                return " ".join(toks).strip()
-            return (_ln.get("line_text") or "").strip()
+        # derive column windows from this line only
+        amount_tokens = ln[ln["t"].eq("amount")]
+        booking_tokens = ln[ln["t"].eq("booking")]
+        date_tokens = ln[ln["t"].eq("date")]
+        desc_tokens = ln[ln["t"].eq("description")]
 
-        for a in anchors:
-            start = prev_idx + 1
-            end   = a["idx"]
-            desc_lines: List[str] = []
+        amount_left  = int(amount_tokens["left"].median())
+        amount_right = int((amount_tokens["left"] + amount_tokens["width"]).median())
 
-            for k in range(start, end + 1):
-                txt = left_of_cut_text(lines[k], line_dfs[k])
-                txt = _clean_desc_line(txt)
-                if not txt:
-                    continue
-                if SUMMARY_ROW_RE.match(txt) or txt.lower() == "description":
-                    continue
-                if DATE_DOT_REGEX.fullmatch(txt) or AMOUNT_CHUNK_REGEX.fullmatch(txt):
-                    continue
-                desc_lines.append(txt)
+        # date column spans "Booking"+"Date" block; take min left / max right from those two
+        if not booking_tokens.empty and not date_tokens.empty:
+            date_left_hard = int(min(booking_tokens["left"].median(), date_tokens["left"].median()))
+            date_right_hdr = int(max((booking_tokens["left"] + booking_tokens["width"]).median(),
+                                     (date_tokens["left"] + date_tokens["width"]).median()))
+        else:
+            src = booking_tokens if not booking_tokens.empty else date_tokens
+            date_left_hard = int(src["left"].median())
+            date_right_hdr = int((src["left"] + src["width"]).median())
 
-            # Merchant line = first meaningful line; fallback to joined unique lines
-            description = ""
-            for dl in desc_lines:
-                if dl.lower().startswith(("value date", "previous", "incoming", "outgoing")):
-                    continue
-                description = dl
-                break
-            if not description and desc_lines:
-                seen, uniq = set(), []
-                for dl in desc_lines:
-                    if dl in seen: continue
-                    seen.add(dl); uniq.append(dl)
-                description = " ".join(uniq)
-            description = FOOTER_RE.sub("", description).strip()
+        # pad windows
+        date_left  = date_left_hard - 80
+        date_right = date_right_hdr + 80
 
-            results.append({
-                "seq": seq,
-                "transactions_date": a["date"],
-                "transaction_type": "debit" if a["amount"] < 0 else "credit",
-                "description": description,
-                "amount": {"value": abs(a["amount"]), "currency": currency},
-                "balance_after_statement": None,
-                "balance_after_calculated": None,
+        amount_left_pad  = amount_left - 140
+        amount_right_pad = amount_right + 160
+
+        # enforce separation: date must be strictly left of amount
+        if date_right >= amount_left_pad:
+            date_right = amount_left_pad - 12
+
+        desc_max_right = date_left_hard - 40
+
+        if debug:
+            hdr_line_text = " | ".join(ln.sort_values("left")["text"].astype(str))
+            print(f"[COLS] (by header words) page={page_idx+1} line_y≈{int(cy_med)} "
+                  f"date_left_hard={date_left_hard}  "
+                  f"date_win=({date_left},{date_right})  amount_win=({amount_left_pad},{amount_right_pad})")
+            print(f"      header-line: {hdr_line_text}")
+
+        return dict(
+            date_left=date_left, date_right=date_right,
+            amount_left=amount_left_pad, amount_right=amount_right_pad,
+            desc_max_right=desc_max_right, date_left_hard=date_left_hard,
+            source="header", header_text="Description | Booking Date | Amount"
+        )
+
+    return None
+
+# ---------- clustering helpers ----------
+def _cluster_by_left(xs: List[int], gap: int) -> List[List[int]]:
+    if not xs: return []
+    xs = sorted(xs)
+    clusters, cur = [], [xs[0]]
+    for x in xs[1:]:
+        if x - cur[-1] <= gap:
+            cur.append(x)
+        else:
+            clusters.append(cur); cur = [x]
+    clusters.append(cur)
+    return clusters
+
+# ---------- cluster fallback (close-to-amount) ----------
+def _infer_columns_by_clusters(pages: List[dict], debug=False) -> Optional[Dict[str,int]]:
+    for page_idx, page in enumerate(pages[:2]):
+        df = _page_words_to_df(page)
+        if df.empty:
+            continue
+
+        # candidates
+        is_date = df["text"].apply(lambda t: bool(DATE_RE.search(t)))
+        dates = df.loc[is_date, ["left","right","top","bottom","cy","text"]].copy()
+
+        has_euro = df["text"].str.contains("€", regex=False, na=False)
+        amts = df.loc[has_euro, ["left","right","top","bottom","cy","text"]].copy()
+
+        if dates.empty or amts.empty:
+            continue
+
+        # clusters
+        date_clusters = _cluster_by_left(dates["left"].astype(int).tolist(), gap=140)
+        amt_clusters  = _cluster_by_left(amts["left"].astype(int).tolist(), gap=180)
+
+        d_scored, a_scored = [], []
+        for cl in date_clusters:
+            g = dates[dates["left"].isin(cl)]
+            d_scored.append({
+                "size": int(len(g)),
+                "left_med": int(g["left"].median()),
+                "right_med": int(g["right"].median()),
+                "cy_med": float(g["cy"].median()),
             })
-            seq += 1
-            prev_idx = end
+        for cl in amt_clusters:
+            g = amts[amts["left"].isin(cl)]
+            a_scored.append({
+                "size": int(len(g)),
+                "left_med": int(g["left"].median()),
+                "right_med": int(g["right"].median()),
+                "cy_med": float(g["cy"].median()),
+            })
+        if not d_scored or not a_scored:
+            continue
 
-    for i, r in enumerate(results):
-        r["seq"] = i
-    if DEBUG: print(f"[N26] total transactions parsed: {len(results)}")
-    return results
+        # amount = most hits, then far-right
+        a_scored.sort(key=lambda s: (-s["size"], s["left_med"]))
+        a_pick = a_scored[-1]
+        amount_left  = a_pick["left_med"] - 140
+        amount_right = a_pick["right_med"] + 160
 
-# ---------- Currency bucketing & entrypoint ----------
-def _group_by_currency(transactions: List[dict]) -> Dict[str, List[dict]]:
-    buckets: Dict[str, List[dict]] = defaultdict(list)
-    for t in transactions:
-        cur = t.get("amount", {}).get("currency")
-        if cur: buckets[cur].append(t)
-    for cur in buckets:
-        buckets[cur].sort(key=lambda t: t.get("seq", 0))
-    return buckets
+        # date: must be left of amount; choose **closest** to amount on the left
+        left_of_amount = [s for s in d_scored if s["right_med"] < amount_left - 20]
+        if not left_of_amount:
+            left_of_amount = d_scored  # last resort
 
-def _build_currency_sections_from_rows(buckets: Dict[str, List[dict]]) -> Dict[str, Any]:
-    out: Dict[str, Any] = {}
-    for cur, txs in sorted(buckets.items()):
-        money_in  = round(sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "credit"), 2)
-        money_out = round(sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "debit"), 2)
-        out[cur] = {
-            "opening_balance": None,
-            "money_in_total":  {"value": money_in,  "currency": cur},
-            "money_out_total": {"value": money_out, "currency": cur},
-            "closing_balance_statement": None,
-            "closing_balance_calculated": None,
-            "transactions": txs,
-        }
+        for s in left_of_amount:
+            s["_dx"] = max(1, a_pick["left_med"] - s["left_med"])  # smaller is better
+
+        # primary: min distance to amount; secondary: more rows; tertiary: right-most
+        left_of_amount.sort(key=lambda s: (s["_dx"], -s["size"], -s["left_med"]))
+        d_pick = left_of_amount[0]
+
+        date_left_hard = d_pick["left_med"]
+        date_left  = date_left_hard - 80
+        date_right = d_pick["right_med"] + 80
+        if date_right >= amount_left:
+            date_right = amount_left - 10
+
+        if debug:
+            print(f"[COLS] (by clusters) page={page_idx+1} date_left_hard={date_left_hard}  "
+                  f"date_win=({date_left},{date_right})  amount_win=({amount_left},{amount_right})")
+            for s in sorted(d_scored, key=lambda k:k["left_med"]):
+                flag = "  <-- pick" if s is d_pick else ""
+                extra = f" dx={a_pick['left_med']-s['left_med']}" if "left_med" in s else ""
+                print(f"      date cluster: x≈{s['left_med']} size={s['size']} cy≈{int(s['cy_med'])}{extra}{flag}")
+            for s in sorted(a_scored, key=lambda k:k["left_med"]):
+                print(f"      amt  cluster: x≈{s['left_med']} size={s['size']} cy≈{int(s['cy_med'])}"
+                      f"{'  <-- pick' if s is a_pick else ''}")
+
+        return dict(
+            date_left=date_left, date_right=date_right,
+            amount_left=amount_left, amount_right=amount_right,
+            desc_max_right=date_left_hard - 40,
+            date_left_hard=date_left_hard,
+            source="clusters", header_text="Description | Booking Date | Amount"
+        )
+    return None
+
+# ---------- rows ----------
+def _yclusters(df: pd.DataFrame, gap: Optional[float]=None) -> List[pd.DataFrame]:
+    if df.empty: return []
+    med_h = _med_height(df)
+    if gap is None: gap = max(6.0, med_h * 0.45)
+    df = df.sort_values("cy").reset_index(drop=True)
+    out, start = [], 0
+    for i in range(1, len(df)):
+        if df.loc[i, "cy"] - df.loc[i-1, "cy"] > gap:
+            out.append(df.iloc[start:i].sort_values("left")); start = i
+    out.append(df.iloc[start:].sort_values("left"))
     return out
 
-def extract_iban(pages: List[dict]) -> Optional[str]:
-    iban_pattern = re.compile(r'\b([A-Z]{2}\d{2}[A-Z0-9]{11,30})\b')
-    for page in pages:
-        for line in page.get("lines", []):
-            txt = (line.get("line_text") or "")
-            if "IBAN" in txt.upper():
-                after = txt.upper().split("IBAN", 1)[-1]
-                cleaned = re.sub(r"\s+", "", after)
-                m = iban_pattern.search(cleaned)
-                if m: return m.group(1)
-    return None
+# ---------- field extractors ----------
+def _extract_topmost_date_in_window(row_df: pd.DataFrame, left: int, right: int) -> tuple[Optional[str], Optional[int]]:
+    if row_df.empty: return None, None
+    m = (row_df["right"] >= left) & (row_df["left"] <= right)
+    cand = row_df.loc[m, ["text","top","height","cy","left","right"]].copy()
+    if cand.empty: return None, None
 
-def extract_bic(pages: List[dict]) -> Optional[str]:
-    bic_token = re.compile(r'\b([A-Z0-9]{8}([A-Z0-9]{3})?)\b')
-    for page in pages:
-        for line in page.get("lines", []):
-            txt = (line.get("line_text") or "")
-            if "BIC" in txt.upper():
-                after = txt.upper().split("BIC", 1)[-1]
-                after = re.sub(r"[:\s]+", " ", after).strip()
-                m = bic_token.search(after)
-                if m: return m.group(1)
-    return None
+    toks = []
+    for _, r in cand.iterrows():
+        for t in str(r["text"]).split():
+            mdt = DATE_RE.search(t)
+            if mdt:
+                toks.append((t, int(r["top"]), float(r.get("cy", r["top"] + r["height"] * 0.5))))
+    if toks:
+        tmin, _, cy = min(toks, key=lambda x: x[1])
+        d, mth, y = DATE_RE.search(tmin).groups()
+        if len(y) == 2: y = "20" + y
+        return f"{d.zfill(2)}.{mth.zfill(2)}.{y}", int(round(cy))
 
-def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unknown"):
+    txt = _norm(" ".join(cand["text"].tolist())).replace(" ", "")
+    m2 = DATE_RE.search(txt)
+    if not m2: return None, None
+    d, mth, y = m2.groups()
+    if len(y) == 2: y = "20" + y
+    return f"{d.zfill(2)}.{mth.zfill(2)}.{y}", int(round(float(cand["cy"].min())))
+
+def _extract_amount_text(row_df: pd.DataFrame, left: int, right: int) -> Optional[str]:
+    """Strict per-row amount parsing: require '€' inside the window."""
+    if row_df.empty: return None
+    m = (row_df["right"] >= left) & (row_df["left"] <= right)
+    if not m.any(): return None
+    txt = _norm(" ".join(row_df.loc[m, "text"].tolist()))
+    if "€" not in txt:
+        return None
+    mt = AMOUNT_RE.search(txt)
+    if not mt: return None
+    sign = mt.group("sign") or ""
+    sign = "-" if sign in ("-","−") else ("+" if sign == "+" else "")
+    body = (mt.group("body")
+            .replace("\u00A0"," ").replace("\u2009"," ").replace("\u202F"," ").replace(" ",""))
+    if "," not in body and "." in body:
+        i = body.rfind("."); body = body[:i] + "," + body[i+1:]
+    return f"{sign}{body}€"
+
+# ---------- description (seed line + baseline) ----------
+def _pick_seed_token(left_df: pd.DataFrame, anchor_y: float) -> Optional[pd.Series]:
+    if left_df is None or left_df.empty: return None
+    cand = left_df.copy()
+    avoid = cand["text"].str.strip().str.lower().str.match(r"(value|date|mastercard)\b", na=False)
+    good  = cand.loc[~avoid]
+    target = good if not good.empty else cand
+    target = target.assign(dy=(target["cy"] - float(anchor_y)).abs())
+    above  = target[target["cy"] <= float(anchor_y) + 0.5]
+    if not above.empty:
+        return above.sort_values(["dy","left"]).iloc[0]
+    return target.sort_values(["dy","left"]).iloc[0]
+
+def _merge_same_tess_line(page_df: pd.DataFrame, seed: pd.Series, date_left_hard: int) -> str:
+    b, p, l = int(seed["block_num"]), int(seed["par_num"]), int(seed["line_num"])
+    same = page_df[(page_df["block_num"]==b)&(page_df["par_num"]==p)&(page_df["line_num"]==l)]
+    if same.empty:
+        return _norm(str(seed["text"]))
+    left_cut = int(date_left_hard) - 2
+    same = same[same["left"] < left_cut].sort_values("left")
+    txt = " ".join(_norm(t) for t in same["text"].astype(str)).strip()
+    txt = re.sub(r"\s{2,}", " ", txt)
+    return txt or _norm(str(seed["text"]))
+
+def _merge_same_baseline(page_df: pd.DataFrame, seed: pd.Series, date_left_hard: int) -> str:
+    left_cut = int(date_left_hard) - 2
+    left = page_df[page_df["left"] < left_cut].copy()
+    if left.empty:
+        return _norm(str(seed["text"]))
+    med_h = _med_height(left)
+    tol = max(6.0, med_h * 0.85)
+    band = left[left["cy"].between(float(seed["cy"]) - tol, float(seed["cy"]) + tol)].sort_values("left")
+    if band.empty:
+        return _norm(str(seed["text"]))
+    txt = " ".join(_norm(t) for t in band["text"].astype(str)).strip()
+    txt = re.sub(r"\s{2,}", " ", txt)
+    if FURNITURE.match(txt):
+        upper = left[left["cy"].between(float(seed["cy"]) - tol*1.1, float(seed["cy"]) - tol*0.2)].sort_values("left")
+        txt2 = " ".join(_norm(t) for t in upper["text"].astype(str)).strip()
+        if txt2:
+            txt = re.sub(r"\s{2,}", " ", txt2)
+    return txt or _norm(str(seed["text"]))
+
+def _description_seedline(page_df: pd.DataFrame, date_left_hard: int, anchor_y: float, debug=False) -> Optional[str]:
+    if page_df is None or page_df.empty:
+        return None
+    left_cut = int(date_left_hard) - 2
+    left_all = page_df[page_df["left"] < left_cut].copy()
+    if left_all.empty:
+        return None
+
+    med_h = _med_height(left_all)
+    seed_band = left_all[left_all["cy"].between(float(anchor_y) - 1.8*med_h, float(anchor_y) + 1.0*med_h)]
+    if seed_band.empty:
+        seed_band = left_all
+
+    seed = _pick_seed_token(seed_band, anchor_y)
+    if seed is None:
+        return None
+
+    line_txt = _merge_same_tess_line(page_df, seed, date_left_hard)
+    need_fallback = (len(line_txt.split()) <= 1) or bool(FURNITURE.match(line_txt))
+    desc = line_txt if not need_fallback else _merge_same_baseline(page_df, seed, date_left_hard)
+
+    if debug:
+        b, p, l = int(seed["block_num"]), int(seed["par_num"]), int(seed["line_num"])
+        same = page_df[(page_df["block_num"]==b)&(page_df["par_num"]==p)&(page_df["line_num"]==l)]
+        same = same[same["left"] < left_cut].sort_values("left")
+        dbg_line = " | ".join(same["text"].astype(str))
+        print(f"  [DBG] seed='{seed['text']}' cy={round(float(seed['cy']),1)} line={b}/{p}/{l}")
+        print(f"  [DBG] tess-line tokens: {dbg_line if dbg_line else '(none left of date)'}")
+        print(f"  [DBG] desc='{desc}' (line merge{' + baseline' if need_fallback else ''})")
+
+    return desc or None
+
+# ---------- main ----------
+def parse_and_preview_n26(raw_ocr: dict, max_rows: int = 50, debug: bool = False) -> List[Tuple[str,str,str]]:
     pages = raw_ocr.get("pages", []) or []
+    if not pages:
+        print("No pages in OCR.")
+        return []
 
-    transactions = parse_n26_transactions_single_pass(pages)
-    buckets = _group_by_currency(transactions)
-    currencies = _build_currency_sections_from_rows(buckets)
-
-    iban = extract_iban(pages)
-    bic  = extract_bic(pages)
-
-    if transactions:
-        dates = [t.get("transactions_date") for t in transactions if t.get("transactions_date")]
-        start_date = min(dates) if dates else None
-        end_date   = max(dates) if dates else None
+    # try header first, then cluster fallback
+    cols = _find_header_columns_by_words(pages, debug=debug)
+    if not cols:
+        cols = _infer_columns_by_clusters(pages, debug=debug)
+    if cols:
+        print(f"📑 Header: {cols['header_text']}")
     else:
-        start_date = end_date = None
+        print("📑 Header not found; using crude column guesses.")
+        cols = {
+            "date_left": 900, "date_right": 1150,
+            "amount_left": 1500, "amount_right": 1850,
+            "desc_max_right": 850, "date_left_hard": 940,
+            "source":"fallback", "header_text":""
+        }
 
-    return {
-        "client": client,
-        "file_name": raw_ocr.get("file_name"),
-        "account_holder": None,
-        "institution": "N26 Bank",
-        "account_type": account_type,
-        "iban": iban,
-        "bic": bic,
-        "statement_start_date": start_date,
-        "statement_end_date": end_date,
-        "currencies": currencies,
-    }
+    out: List[Tuple[str,str,str]] = []
+    shown = 0
+    seen = set()
+
+    for pi, page in enumerate(pages):
+        df = _page_words_to_df(page)
+        if df.empty: continue
+
+        med_h_page = _med_height(df)
+        ybin_h = max(10.0, med_h_page * 0.9)
+
+        for idx, row in enumerate(_yclusters(df)):
+            amount = _extract_amount_text(row, cols["amount_left"], cols["amount_right"])
+            if not amount:
+                continue
+            date, anchor_y = _extract_topmost_date_in_window(row, cols["date_left"], cols["date_right"])
+            if not date:
+                continue
+
+            # dedupe by (page, ybin, amount)
+            rowkey = (pi, int(round(float(anchor_y) / ybin_h)), amount)
+            if rowkey in seen:
+                if debug:
+                    print(f"  [DBG] skip duplicate p{pi+1} idx={idx} y~{round(float(anchor_y),1)}")
+                continue
+            seen.add(rowkey)
+
+            if debug:
+                print(f"[ROW] p{pi+1} idx={idx} y~{round(float(anchor_y),1)} date={date} amt={amount}")
+
+            desc = _description_seedline(df, cols["date_left_hard"], float(anchor_y), debug=debug) or ""
+
+            out.append((desc, date, amount))
+            if shown < max_rows:
+                print(f"{desc}   {date}   {amount}")
+                shown += 1
+
+        if shown >= max_rows:
+            break
+
+    if not out:
+        print("No transactions detected.")
+    else:
+        print(f"…showing {min(len(out), max_rows)} of {len(out)} matches")
+    return out

@@ -28,7 +28,7 @@ REVOLUT_SETTINGS = OcrProfile(
 N26_SETTINGS = OcrProfile(
     name="N26",
     preprocess=PreprocessSettings(
-        dpi=225,
+        dpi=300,
         use_adaptive_threshold=False,   # ← important
         morph_close=False,              # ← avoid column bleeding
         resize_fx=1.2, resize_fy=1.2,
