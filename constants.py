@@ -1,6 +1,9 @@
 
 # --- Detect bank provider ---
 BANK_PATTERNS = {
+    "AIB": [
+        r"\bAllied Irish Bank\b", r"\bAIB\b"
+    ],
     "N26": [
         r"\bNTSB"
     ],
