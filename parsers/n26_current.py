@@ -1,25 +1,34 @@
-# n26_current.py — robust N26 extractor (header-first; cluster fallback close-to-amount)
+# n26_current.py
+# Parse N26 statements into the same JSON shape used by Revolut/BOI.
+# - Find the true header row ("Booking", "Date", "Amount") to anchor columns.
+# - Build rows via Y-clusters; keep only clusters that contain an amount within the Amount window.
+# - Date = topmost date token within the date window on the row.
+# - Description = all tokens on the same baseline strictly left of the Booking Date column (seed + baseline grow).
+# - Dedupe rows by (page, y-bin, date, amount).
+
 from __future__ import annotations
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
+from collections import defaultdict
+
 import pandas as pd
 
-# ---------- regexes ----------
-DATE_RE   = re.compile(r"\b(\d{1,2})[./\-](\d{1,2})[./\-](\d{2,4})\b")
-AMOUNT_RE = re.compile(r"(?P<sign>[+\-−])?\s*(?P<body>\d{1,3}(?:[.\s\u00A0\u2009\u202F]\d{3})*[.,]\d{2})\s*€")
-FURNITURE = re.compile(r"^(?:value\s*date\b|mastercard\b)$", re.I)
+from utils import parse_currency, parse_date
 
-# ---------- utils ----------
-def _med_height(df: pd.DataFrame) -> float:
-    return float(df["height"].median()) if ("height" in df and not df["height"].empty) else 18.0
+# ---------------- regexes ----------------
+DATE_RE = re.compile(r"\b(\d{1,2})[./\-](\d{1,2})[./\-](\d{2,4})\b")
+# Keep the regex permissive, but we’ll require either a sign or a € in-window (to avoid dates)
+AMT_RE = re.compile(r"(?P<sign>[+\-−])?\s*(?P<body>\d{1,3}(?:[.\s\u00A0\u2009\u202F]\d{3})*[.,]\d{2})\s*(?:€)?")
 
+# ---------------- small utils ----------------
 def _norm(s: str) -> str:
     if not s: return ""
-    return (s.replace("\u00A0"," ")
-             .replace("\u2009"," ")
-             .replace("\u202F"," ")
-             .replace("−","-")
-             .strip())
+    return (str(s)
+            .replace("\u00A0", " ")
+            .replace("\u2009", " ")
+            .replace("\u202F", " ")
+            .replace("−", "-")
+            .strip())
 
 def _page_words_to_df(page: dict) -> pd.DataFrame:
     rows = []
@@ -27,417 +36,368 @@ def _page_words_to_df(page: dict) -> pd.DataFrame:
         for w in ln.get("words", []) or []:
             rows.append(w)
     if not rows:
-        return pd.DataFrame(columns=[
-            "text","left","top","width","height","right","bottom","cy",
-            "block_num","par_num","line_num","word_num"
-        ])
+        return pd.DataFrame(columns=["text", "left", "top", "width", "height",
+                                     "right", "bottom", "cy",
+                                     "block_num", "par_num", "line_num"])
     df = pd.DataFrame(rows).copy()
-    for c in ("left","top","width","height"):
-        if c in df.columns: df[c] = df[c].astype(int)
-    for c in ("block_num","par_num","line_num","word_num"):
+    for c in ("left", "top", "width", "height"):
+        if c in df.columns: df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
+        else: df[c] = 0
+    df["right"] = df["left"] + df["width"]
+    df["bottom"] = df["top"] + df["height"]
+    df["cy"] = df["top"] + df["height"] * 0.5
+    df["text"] = df["text"].astype(str)
+    # tesseract IDs (optional)
+    for c in ("block_num", "par_num", "line_num"):
         if c not in df.columns: df[c] = -1
-    df["right"]  = df["left"] + df["width"]
-    df["bottom"] = df["top"]  + df["height"]
-    df["cy"]     = df["top"] + df["height"] * 0.5
-    df["text"]   = df["text"].astype(str)
     return df
 
-# ---------- header-by-words (preferred) ----------
-def _find_header_columns_by_words(pages: List[dict], debug=False) -> Optional[Dict[str,int]]:
+def _med_height(df: pd.DataFrame) -> float:
+    return float(df["height"].median()) if "height" in df and not df["height"].empty else 18.0
+
+def _row_key(anchor_y: float, med_h: float) -> int:
+    # Wider bin to collapse duplicates
+    ybin_h = max(10.0, med_h * 0.9)
+    return int(round(float(anchor_y) / ybin_h))
+
+# ---------------- header detection ----------------
+def _find_header_columns_by_words(pages: List[dict]) -> Optional[Dict[str, int]]:
     """
-    Robust header finder:
-      1) collect only header words: description / booking / date / amount
-      2) cluster by Y (same line)
-      3) pick the line that contains 'amount' and ('booking' or 'date')
-      4) compute column windows from *that* line only
+    Look for the single header line that contains 'Booking' and 'Date' and 'Amount'.
+    Returns dict with date/amount windows and the hard left edge of the date column.
     """
-    header_words = {"description", "booking", "date", "amount"}
-
-    for page_idx, page in enumerate(pages[:2]):
-        df = _page_words_to_df(page)
-        if df.empty:
-            continue
-
-        # keep only possible header tokens
-        tok = df.assign(t=df["text"].str.strip().str.lower())
-        hdr = tok[tok["t"].isin(header_words)].copy()
-        if hdr.empty:
-            continue
-
-        # cluster by Y (tight: same printed line)
-        med_h = _med_height(hdr)
-        gap = max(6.0, med_h * 0.60)
-        hdr = hdr.sort_values("cy").reset_index(drop=True)
-
-        lines: List[pd.DataFrame] = []
-        start = 0
-        for i in range(1, len(hdr)):
-            if hdr.loc[i, "cy"] - hdr.loc[i-1, "cy"] > gap:
-                lines.append(hdr.iloc[start:i].sort_values("left"))
-                start = i
-        lines.append(hdr.iloc[start:].sort_values("left"))
-
-        # score lines; must have AMOUNT and (BOOKING or DATE)
-        candidates = []
-        for ln in lines:
-            words = set(ln["t"].tolist())
-            if "amount" in words and (("booking" in words) or ("date" in words)):
-                left_min  = int(ln["left"].min())
-                right_max = int((ln["left"] + ln["width"]).max())
-                cy_med    = float(ln["cy"].median())
-                width     = right_max - left_min
-                candidates.append((ln, width, left_min, right_max, cy_med))
-
-        if not candidates:
-            # no good line on this page, try next page
-            continue
-
-        # choose widest header line (it spans Description .. Amount)
-        candidates.sort(key=lambda x: (-x[1], x[2]))
-        ln, _, _, _, cy_med = candidates[0]
-
-        # derive column windows from this line only
-        amount_tokens = ln[ln["t"].eq("amount")]
-        booking_tokens = ln[ln["t"].eq("booking")]
-        date_tokens = ln[ln["t"].eq("date")]
-        desc_tokens = ln[ln["t"].eq("description")]
-
-        amount_left  = int(amount_tokens["left"].median())
-        amount_right = int((amount_tokens["left"] + amount_tokens["width"]).median())
-
-        # date column spans "Booking"+"Date" block; take min left / max right from those two
-        if not booking_tokens.empty and not date_tokens.empty:
-            date_left_hard = int(min(booking_tokens["left"].median(), date_tokens["left"].median()))
-            date_right_hdr = int(max((booking_tokens["left"] + booking_tokens["width"]).median(),
-                                     (date_tokens["left"] + date_tokens["width"]).median()))
-        else:
-            src = booking_tokens if not booking_tokens.empty else date_tokens
-            date_left_hard = int(src["left"].median())
-            date_right_hdr = int((src["left"] + src["width"]).median())
-
-        # pad windows
-        date_left  = date_left_hard - 80
-        date_right = date_right_hdr + 80
-
-        amount_left_pad  = amount_left - 140
-        amount_right_pad = amount_right + 160
-
-        # enforce separation: date must be strictly left of amount
-        if date_right >= amount_left_pad:
-            date_right = amount_left_pad - 12
-
-        desc_max_right = date_left_hard - 40
-
-        if debug:
-            hdr_line_text = " | ".join(ln.sort_values("left")["text"].astype(str))
-            print(f"[COLS] (by header words) page={page_idx+1} line_y≈{int(cy_med)} "
-                  f"date_left_hard={date_left_hard}  "
-                  f"date_win=({date_left},{date_right})  amount_win=({amount_left_pad},{amount_right_pad})")
-            print(f"      header-line: {hdr_line_text}")
-
-        return dict(
-            date_left=date_left, date_right=date_right,
-            amount_left=amount_left_pad, amount_right=amount_right_pad,
-            desc_max_right=desc_max_right, date_left_hard=date_left_hard,
-            source="header", header_text="Description | Booking Date | Amount"
-        )
-
-    return None
-
-# ---------- clustering helpers ----------
-def _cluster_by_left(xs: List[int], gap: int) -> List[List[int]]:
-    if not xs: return []
-    xs = sorted(xs)
-    clusters, cur = [], [xs[0]]
-    for x in xs[1:]:
-        if x - cur[-1] <= gap:
-            cur.append(x)
-        else:
-            clusters.append(cur); cur = [x]
-    clusters.append(cur)
-    return clusters
-
-# ---------- cluster fallback (close-to-amount) ----------
-def _infer_columns_by_clusters(pages: List[dict], debug=False) -> Optional[Dict[str,int]]:
-    for page_idx, page in enumerate(pages[:2]):
-        df = _page_words_to_df(page)
-        if df.empty:
-            continue
-
-        # candidates
-        is_date = df["text"].apply(lambda t: bool(DATE_RE.search(t)))
-        dates = df.loc[is_date, ["left","right","top","bottom","cy","text"]].copy()
-
-        has_euro = df["text"].str.contains("€", regex=False, na=False)
-        amts = df.loc[has_euro, ["left","right","top","bottom","cy","text"]].copy()
-
-        if dates.empty or amts.empty:
-            continue
-
-        # clusters
-        date_clusters = _cluster_by_left(dates["left"].astype(int).tolist(), gap=140)
-        amt_clusters  = _cluster_by_left(amts["left"].astype(int).tolist(), gap=180)
-
-        d_scored, a_scored = [], []
-        for cl in date_clusters:
-            g = dates[dates["left"].isin(cl)]
-            d_scored.append({
-                "size": int(len(g)),
-                "left_med": int(g["left"].median()),
-                "right_med": int(g["right"].median()),
-                "cy_med": float(g["cy"].median()),
-            })
-        for cl in amt_clusters:
-            g = amts[amts["left"].isin(cl)]
-            a_scored.append({
-                "size": int(len(g)),
-                "left_med": int(g["left"].median()),
-                "right_med": int(g["right"].median()),
-                "cy_med": float(g["cy"].median()),
-            })
-        if not d_scored or not a_scored:
-            continue
-
-        # amount = most hits, then far-right
-        a_scored.sort(key=lambda s: (-s["size"], s["left_med"]))
-        a_pick = a_scored[-1]
-        amount_left  = a_pick["left_med"] - 140
-        amount_right = a_pick["right_med"] + 160
-
-        # date: must be left of amount; choose **closest** to amount on the left
-        left_of_amount = [s for s in d_scored if s["right_med"] < amount_left - 20]
-        if not left_of_amount:
-            left_of_amount = d_scored  # last resort
-
-        for s in left_of_amount:
-            s["_dx"] = max(1, a_pick["left_med"] - s["left_med"])  # smaller is better
-
-        # primary: min distance to amount; secondary: more rows; tertiary: right-most
-        left_of_amount.sort(key=lambda s: (s["_dx"], -s["size"], -s["left_med"]))
-        d_pick = left_of_amount[0]
-
-        date_left_hard = d_pick["left_med"]
-        date_left  = date_left_hard - 80
-        date_right = d_pick["right_med"] + 80
-        if date_right >= amount_left:
-            date_right = amount_left - 10
-
-        if debug:
-            print(f"[COLS] (by clusters) page={page_idx+1} date_left_hard={date_left_hard}  "
-                  f"date_win=({date_left},{date_right})  amount_win=({amount_left},{amount_right})")
-            for s in sorted(d_scored, key=lambda k:k["left_med"]):
-                flag = "  <-- pick" if s is d_pick else ""
-                extra = f" dx={a_pick['left_med']-s['left_med']}" if "left_med" in s else ""
-                print(f"      date cluster: x≈{s['left_med']} size={s['size']} cy≈{int(s['cy_med'])}{extra}{flag}")
-            for s in sorted(a_scored, key=lambda k:k["left_med"]):
-                print(f"      amt  cluster: x≈{s['left_med']} size={s['size']} cy≈{int(s['cy_med'])}"
-                      f"{'  <-- pick' if s is a_pick else ''}")
-
-        return dict(
-            date_left=date_left, date_right=date_right,
-            amount_left=amount_left, amount_right=amount_right,
-            desc_max_right=date_left_hard - 40,
-            date_left_hard=date_left_hard,
-            source="clusters", header_text="Description | Booking Date | Amount"
-        )
-    return None
-
-# ---------- rows ----------
-def _yclusters(df: pd.DataFrame, gap: Optional[float]=None) -> List[pd.DataFrame]:
-    if df.empty: return []
-    med_h = _med_height(df)
-    if gap is None: gap = max(6.0, med_h * 0.45)
-    df = df.sort_values("cy").reset_index(drop=True)
-    out, start = [], 0
-    for i in range(1, len(df)):
-        if df.loc[i, "cy"] - df.loc[i-1, "cy"] > gap:
-            out.append(df.iloc[start:i].sort_values("left")); start = i
-    out.append(df.iloc[start:].sort_values("left"))
-    return out
-
-# ---------- field extractors ----------
-def _extract_topmost_date_in_window(row_df: pd.DataFrame, left: int, right: int) -> tuple[Optional[str], Optional[int]]:
-    if row_df.empty: return None, None
-    m = (row_df["right"] >= left) & (row_df["left"] <= right)
-    cand = row_df.loc[m, ["text","top","height","cy","left","right"]].copy()
-    if cand.empty: return None, None
-
-    toks = []
-    for _, r in cand.iterrows():
-        for t in str(r["text"]).split():
-            mdt = DATE_RE.search(t)
-            if mdt:
-                toks.append((t, int(r["top"]), float(r.get("cy", r["top"] + r["height"] * 0.5))))
-    if toks:
-        tmin, _, cy = min(toks, key=lambda x: x[1])
-        d, mth, y = DATE_RE.search(tmin).groups()
-        if len(y) == 2: y = "20" + y
-        return f"{d.zfill(2)}.{mth.zfill(2)}.{y}", int(round(cy))
-
-    txt = _norm(" ".join(cand["text"].tolist())).replace(" ", "")
-    m2 = DATE_RE.search(txt)
-    if not m2: return None, None
-    d, mth, y = m2.groups()
-    if len(y) == 2: y = "20" + y
-    return f"{d.zfill(2)}.{mth.zfill(2)}.{y}", int(round(float(cand["cy"].min())))
-
-def _extract_amount_text(row_df: pd.DataFrame, left: int, right: int) -> Optional[str]:
-    """Strict per-row amount parsing: require '€' inside the window."""
-    if row_df.empty: return None
-    m = (row_df["right"] >= left) & (row_df["left"] <= right)
-    if not m.any(): return None
-    txt = _norm(" ".join(row_df.loc[m, "text"].tolist()))
-    if "€" not in txt:
-        return None
-    mt = AMOUNT_RE.search(txt)
-    if not mt: return None
-    sign = mt.group("sign") or ""
-    sign = "-" if sign in ("-","−") else ("+" if sign == "+" else "")
-    body = (mt.group("body")
-            .replace("\u00A0"," ").replace("\u2009"," ").replace("\u202F"," ").replace(" ",""))
-    if "," not in body and "." in body:
-        i = body.rfind("."); body = body[:i] + "," + body[i+1:]
-    return f"{sign}{body}€"
-
-# ---------- description (seed line + baseline) ----------
-def _pick_seed_token(left_df: pd.DataFrame, anchor_y: float) -> Optional[pd.Series]:
-    if left_df is None or left_df.empty: return None
-    cand = left_df.copy()
-    avoid = cand["text"].str.strip().str.lower().str.match(r"(value|date|mastercard)\b", na=False)
-    good  = cand.loc[~avoid]
-    target = good if not good.empty else cand
-    target = target.assign(dy=(target["cy"] - float(anchor_y)).abs())
-    above  = target[target["cy"] <= float(anchor_y) + 0.5]
-    if not above.empty:
-        return above.sort_values(["dy","left"]).iloc[0]
-    return target.sort_values(["dy","left"]).iloc[0]
-
-def _merge_same_tess_line(page_df: pd.DataFrame, seed: pd.Series, date_left_hard: int) -> str:
-    b, p, l = int(seed["block_num"]), int(seed["par_num"]), int(seed["line_num"])
-    same = page_df[(page_df["block_num"]==b)&(page_df["par_num"]==p)&(page_df["line_num"]==l)]
-    if same.empty:
-        return _norm(str(seed["text"]))
-    left_cut = int(date_left_hard) - 2
-    same = same[same["left"] < left_cut].sort_values("left")
-    txt = " ".join(_norm(t) for t in same["text"].astype(str)).strip()
-    txt = re.sub(r"\s{2,}", " ", txt)
-    return txt or _norm(str(seed["text"]))
-
-def _merge_same_baseline(page_df: pd.DataFrame, seed: pd.Series, date_left_hard: int) -> str:
-    left_cut = int(date_left_hard) - 2
-    left = page_df[page_df["left"] < left_cut].copy()
-    if left.empty:
-        return _norm(str(seed["text"]))
-    med_h = _med_height(left)
-    tol = max(6.0, med_h * 0.85)
-    band = left[left["cy"].between(float(seed["cy"]) - tol, float(seed["cy"]) + tol)].sort_values("left")
-    if band.empty:
-        return _norm(str(seed["text"]))
-    txt = " ".join(_norm(t) for t in band["text"].astype(str)).strip()
-    txt = re.sub(r"\s{2,}", " ", txt)
-    if FURNITURE.match(txt):
-        upper = left[left["cy"].between(float(seed["cy"]) - tol*1.1, float(seed["cy"]) - tol*0.2)].sort_values("left")
-        txt2 = " ".join(_norm(t) for t in upper["text"].astype(str)).strip()
-        if txt2:
-            txt = re.sub(r"\s{2,}", " ", txt2)
-    return txt or _norm(str(seed["text"]))
-
-def _description_seedline(page_df: pd.DataFrame, date_left_hard: int, anchor_y: float, debug=False) -> Optional[str]:
-    if page_df is None or page_df.empty:
-        return None
-    left_cut = int(date_left_hard) - 2
-    left_all = page_df[page_df["left"] < left_cut].copy()
-    if left_all.empty:
-        return None
-
-    med_h = _med_height(left_all)
-    seed_band = left_all[left_all["cy"].between(float(anchor_y) - 1.8*med_h, float(anchor_y) + 1.0*med_h)]
-    if seed_band.empty:
-        seed_band = left_all
-
-    seed = _pick_seed_token(seed_band, anchor_y)
-    if seed is None:
-        return None
-
-    line_txt = _merge_same_tess_line(page_df, seed, date_left_hard)
-    need_fallback = (len(line_txt.split()) <= 1) or bool(FURNITURE.match(line_txt))
-    desc = line_txt if not need_fallback else _merge_same_baseline(page_df, seed, date_left_hard)
-
-    if debug:
-        b, p, l = int(seed["block_num"]), int(seed["par_num"]), int(seed["line_num"])
-        same = page_df[(page_df["block_num"]==b)&(page_df["par_num"]==p)&(page_df["line_num"]==l)]
-        same = same[same["left"] < left_cut].sort_values("left")
-        dbg_line = " | ".join(same["text"].astype(str))
-        print(f"  [DBG] seed='{seed['text']}' cy={round(float(seed['cy']),1)} line={b}/{p}/{l}")
-        print(f"  [DBG] tess-line tokens: {dbg_line if dbg_line else '(none left of date)'}")
-        print(f"  [DBG] desc='{desc}' (line merge{' + baseline' if need_fallback else ''})")
-
-    return desc or None
-
-# ---------- main ----------
-def parse_and_preview_n26(raw_ocr: dict, max_rows: int = 50, debug: bool = False) -> List[Tuple[str,str,str]]:
-    pages = raw_ocr.get("pages", []) or []
-    if not pages:
-        print("No pages in OCR.")
-        return []
-
-    # try header first, then cluster fallback
-    cols = _find_header_columns_by_words(pages, debug=debug)
-    if not cols:
-        cols = _infer_columns_by_clusters(pages, debug=debug)
-    if cols:
-        print(f"📑 Header: {cols['header_text']}")
-    else:
-        print("📑 Header not found; using crude column guesses.")
-        cols = {
-            "date_left": 900, "date_right": 1150,
-            "amount_left": 1500, "amount_right": 1850,
-            "desc_max_right": 850, "date_left_hard": 940,
-            "source":"fallback", "header_text":""
-        }
-
-    out: List[Tuple[str,str,str]] = []
-    shown = 0
-    seen = set()
-
-    for pi, page in enumerate(pages):
+    for page in pages[:3]:
         df = _page_words_to_df(page)
         if df.empty: continue
 
-        med_h_page = _med_height(df)
-        ybin_h = max(10.0, med_h_page * 0.9)
+        tok = df.assign(t=df["text"].str.strip().str.lower())
+        # "booking" and "date" can be separate tokens
+        has_booking = tok["t"].str.contains(r"^booking$", regex=True)
+        has_date    = tok["t"].str.contains(r"^date$", regex=True)
+        has_amount  = tok["t"].str.contains(r"^amount$", regex=True)
 
-        for idx, row in enumerate(_yclusters(df)):
-            amount = _extract_amount_text(row, cols["amount_left"], cols["amount_right"])
-            if not amount:
+        # find any line that contains all three words across its words set
+        for ln_id, ln in df.groupby(["block_num", "par_num", "line_num"]):
+            words = ln["text"].str.strip().str.lower().tolist()
+            if not words:
                 continue
-            date, anchor_y = _extract_topmost_date_in_window(row, cols["date_left"], cols["date_right"])
-            if not date:
+            s = " ".join(words)
+            if ("booking" in s and "date" in s) and ("amount" in s):
+                # derive x-positions
+                amt_words = ln[ln["text"].str.strip().str.lower().eq("amount")]
+                if amt_words.empty:
+                    continue
+                amount_left = int(amt_words["left"].median())
+                amount_right = int((amt_words["left"] + amt_words["width"]).median())
+
+                # date can be "booking" and "date" separated; take the span from first of them to the end of "date"
+                date_tokens = ln[ln["text"].str.strip().str.lower().isin(["booking", "date"])]
+                if date_tokens.empty:
+                    continue
+                date_left = int(date_tokens["left"].min())
+                date_right = int((date_tokens["left"] + date_tokens["width"]).max())
+
+                pad = 36
+                desc_max_right = date_left - 40
+
+                return dict(
+                    date_left=date_left - pad,
+                    date_right=date_right + pad,
+                    amount_left=amount_left - 80,
+                    amount_right=amount_right + 140,
+                    desc_max_right=desc_max_right,
+                    date_left_hard=date_left,
+                )
+    return None
+
+# ---------------- y-clusters ----------------
+def _yclusters(df: pd.DataFrame, gap: Optional[float] = None) -> List[pd.DataFrame]:
+    """Group tokens into coarse horizontal rows by center-Y."""
+    if df.empty: return []
+    med_h = _med_height(df)
+    if gap is None:
+        gap = max(6.0, med_h * 0.45)  # tight enough not to merge adjacent rows
+    df2 = df.sort_values("cy").reset_index(drop=True)
+    clusters: List[pd.DataFrame] = []
+    start = 0
+    for i in range(1, len(df2)):
+        if df2.loc[i, "cy"] - df2.loc[i - 1, "cy"] > gap:
+            clusters.append(df2.iloc[start:i].sort_values("left"))
+            start = i
+    clusters.append(df2.iloc[start:].sort_values("left"))
+    return clusters
+
+# ---------------- field extractors ----------------
+def _extract_topmost_date_in_window(row_df: pd.DataFrame, left: int, right: int) -> tuple[Optional[str], Optional[int]]:
+    """Return (date_text 'DD.MM.YYYY', anchor_y from the chosen date token cy)."""
+    if row_df.empty: return None, None
+    m = (row_df["right"] >= left) & (row_df["left"] <= right)
+    cand = row_df.loc[m, ["text", "top", "height", "cy"]].copy()
+    if cand.empty: return None, None
+
+    toks: List[Tuple[str, int, float]] = []
+    for _, r in cand.iterrows():
+        for t in str(r["text"]).split():
+            mm = DATE_RE.search(t)
+            if mm:
+                toks.append((mm.group(0), int(r["top"]), float(r.get("cy", r["top"] + r["height"] * 0.5))))
+
+    if toks:
+        tmin, top, cy = min(toks, key=lambda x: x[1])
+        m2 = DATE_RE.search(tmin)
+        d, mth, y = m2.groups()
+        if len(y) == 2: y = "20" + y
+        return f"{d.zfill(2)}.{mth.zfill(2)}.{y}", int(round(cy))
+
+    # fallback: scan concatenated window text
+    txt = _norm(" ".join(cand["text"].tolist())).replace(" ", "")
+    m3 = DATE_RE.search(txt)
+    if not m3:
+        return None, None
+    d, mth, y = m3.groups()
+    if len(y) == 2: y = "20" + y
+    anchor_y = int(round(float(cand["cy"].min())))
+    return f"{d.zfill(2)}.{mth.zfill(2)}.{y}", anchor_y
+
+def _extract_amount_text(row_df: pd.DataFrame, left: int, right: int) -> Optional[str]:
+    """Extract the visible amount text in the amount window. Guard against dates."""
+    if row_df.empty: return None
+    in_win = row_df[(row_df["right"] >= left) & (row_df["left"] <= right)]
+    if in_win.empty: return None
+    txt = _norm(" ".join(in_win["text"].tolist()))
+    m = AMT_RE.search(txt)
+    if not m:
+        return None
+    # extra guard: require either a sign or a euro symbol in the window text
+    raw_win = "".join(in_win["text"].astype(str).tolist())
+    if ("€" not in raw_win) and (m.group("sign") not in ("+","-","−")):
+        return None
+    sign = m.group("sign") or ""
+    sign = "-" if sign in ("-","−") else ("+" if sign == "+" else "")
+    body = m.group("body").replace(" ", "").replace("\u00A0", "").replace("\u2009", "").replace("\u202F", "")
+    if "," not in body and "." in body:
+        i = body.rfind(".")
+        body = body[:i] + "," + body[i + 1:]
+    return f"{sign}{body}€"
+
+# ---------------- description (seed + baseline) ----------------
+def _left_of_date_lines(page_df: pd.DataFrame, date_left_hard: int) -> list[pd.DataFrame]:
+    if page_df is None or page_df.empty:
+        return []
+    left_cut = int(date_left_hard) - 2
+    left = page_df[page_df["left"] < left_cut].copy()
+    if left.empty:
+        return []
+    left = left.sort_values("cy").reset_index(drop=True)
+    med_h = _med_height(left)
+    gap = max(6.0, med_h * 0.55)  # roughly one visual line per group
+    lines = []
+    start = 0
+    for i in range(1, len(left)):
+        if left.loc[i, "cy"] - left.loc[i - 1, "cy"] > gap:
+            lines.append(left.iloc[start:i].sort_values("left"))
+            start = i
+    lines.append(left.iloc[start:].sort_values("left"))
+    return lines
+
+def _choose_desc_line(lines: list[pd.DataFrame], anchor_y: int) -> Optional[pd.DataFrame]:
+    if not lines:
+        return None
+    scored = []
+    for ln in lines:
+        if ln.empty: continue
+        txt = " ".join(_norm(t) for t in ln["text"].astype(str)).strip()
+        if not txt: continue
+        low = txt.lower()
+        if low.startswith("value date") or "mastercard" in low:
+            continue
+        cy = float(ln["cy"].median())
+        width = int(ln["right"].max() - ln["left"].min())
+        scored.append({"cy": cy, "width": width, "df": ln})
+    if not scored:
+        return None
+    # prefer lines above/same as anchor, nearest first; tie-break: widest
+    above = [s for s in scored if s["cy"] <= float(anchor_y) + 1.0]
+    if above:
+        above.sort(key=lambda s: (float(anchor_y) - s["cy"], -s["width"]))
+        return above[0]["df"]
+    scored.sort(key=lambda s: (abs(s["cy"] - float(anchor_y)), -s["width"]))
+    return scored[0]["df"]
+
+def _description_from_anchor(page_df: pd.DataFrame, date_left_hard: int, anchor_y: int) -> Optional[str]:
+    best = _choose_desc_line(_left_of_date_lines(page_df, date_left_hard), anchor_y)
+    if best is None or best.empty:
+        return None
+    text = " ".join(_norm(t) for t in best.sort_values("left")["text"].astype(str)).strip()
+    text = re.sub(r"\s{2,}", " ", text)
+    return text or None
+
+# ---------------- parsing core ----------------
+def _infer_currency_from_iban(iban: Optional[str], fallback: Optional[str] = "EUR") -> str:
+    if not iban:
+        return fallback or "EUR"
+    u = iban.upper()
+    if u.startswith("GB"): return "GBP"
+    # Most N26 are DE/IE → EUR
+    return "EUR"
+
+def _to_iso_date(s: str) -> Optional[str]:
+    """Accept 'DD.MM.YYYY' and return ISO 'YYYY-MM-DD'; otherwise try parse_date()."""
+    s = s.strip()
+    m = DATE_RE.search(s)
+    if not m:
+        return parse_date(s)  # let utils handle other formats
+    d, mth, y = m.groups()
+    if len(y) == 2: y = "20" + y
+    try:
+        return f"{int(y):04d}-{int(mth):02d}-{int(d):02d}"
+    except Exception:
+        return parse_date(s)
+
+def _amount_to_number(a: str) -> Optional[float]:
+    if not a:
+        return None
+    # reuse utils.parse_currency (robust to €/comma/period)
+    v = parse_currency(a, strip_currency=False)
+    try:
+        return None if v is None else float(v)
+    except Exception:
+        return None
+
+def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[dict]:
+    """
+    Build flat list of N26 transactions using page-level words + Y-clusters,
+    anchored by the true header row.
+    """
+    currency = _infer_currency_from_iban(iban, "EUR")
+    out: List[dict] = []
+    seq = 0
+
+    # 1) header → column windows
+    cols = _find_header_columns_by_words(pages)
+    if not cols:
+        return out  # fail-safe: no header -> nothing
+
+    seen: set[tuple] = set()  # dedupe key
+    for page_idx, page in enumerate(pages):
+        df_page = _page_words_to_df(page)
+        if df_page.empty:
+            continue
+
+        med_h_page = _med_height(df_page)
+
+        for row in _yclusters(df_page):
+            amount_txt = _extract_amount_text(row, cols["amount_left"], cols["amount_right"])
+            if not amount_txt:
                 continue
 
-            # dedupe by (page, ybin, amount)
-            rowkey = (pi, int(round(float(anchor_y) / ybin_h)), amount)
-            if rowkey in seen:
-                if debug:
-                    print(f"  [DBG] skip duplicate p{pi+1} idx={idx} y~{round(float(anchor_y),1)}")
+            date_txt, anchor_y = _extract_topmost_date_in_window(row, cols["date_left"], cols["date_right"])
+            if not date_txt or anchor_y is None:
                 continue
-            seen.add(rowkey)
 
-            if debug:
-                print(f"[ROW] p{pi+1} idx={idx} y~{round(float(anchor_y),1)} date={date} amt={amount}")
+            # Description from the page, anchored at the booking-date row
+            desc = _description_from_anchor(df_page, cols["date_left_hard"], anchor_y) or ""
 
-            desc = _description_seedline(df, cols["date_left_hard"], float(anchor_y), debug=debug) or ""
+            # Dedup by coarse rowbin + (date, amount)
+            rowbin = _row_key(anchor_y, med_h_page)
+            key = (page_idx, rowbin, date_txt, amount_txt)
+            if key in seen:
+                continue
+            seen.add(key)
 
-            out.append((desc, date, amount))
-            if shown < max_rows:
-                print(f"{desc}   {date}   {amount}")
-                shown += 1
+            iso_date = _to_iso_date(date_txt)
+            val = _amount_to_number(amount_txt)
+            if val is None:
+                continue
 
-        if shown >= max_rows:
-            break
+            out.append({
+                "seq": seq,
+                "transactions_date": iso_date,
+                "transaction_type": "credit" if float(val) > 0 else "debit",
+                "description": desc,
+                "amount": {
+                    "value": abs(float(val)),  # keep value positive; type encodes direction
+                    "currency": currency,
+                },
+                # N26 PDFs don’t carry a running balance per row
+                "balance_after_statement": None,
+                "balance_after_calculated": None,
+            })
+            seq += 1
 
-    if not out:
-        print("No transactions detected.")
-    else:
-        print(f"…showing {min(len(out), max_rows)} of {len(out)} matches")
+    # preserve statement order
+    out.sort(key=lambda t: t.get("seq", 0))
     return out
+
+# ---------------- currency sections (N26: no per-page totals) ----------------
+def _group_by_currency(transactions: List[dict]) -> Dict[str, List[dict]]:
+    buckets: Dict[str, List[dict]] = defaultdict(list)
+    for t in transactions:
+        cur = (t.get("amount") or {}).get("currency")
+        if cur:
+            buckets[cur].append(t)
+    for cur in buckets:
+        buckets[cur].sort(key=lambda t: t.get("seq", 0))
+    return buckets
+
+def _build_currency_sections_from_rows(buckets: Dict[str, List[dict]]) -> Dict[str, Any]:
+    out: Dict[str, Any] = {}
+    for cur, txs in sorted(buckets.items()):
+        money_in  = round(sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "credit"), 2)
+        money_out = round(sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "debit"), 2)
+        # N26 statements don’t include balance columns; keep opening/closing unknown
+        out[cur] = {
+            "opening_balance": None,
+            "money_in_total":  {"value": money_in,  "currency": cur},
+            "money_out_total": {"value": money_out, "currency": cur},
+            "closing_balance_statement": None,
+            "closing_balance_calculated": None,
+            "transactions": txs,
+        }
+    return out
+
+# ---------------- public entrypoint ----------------
+def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unknown"):
+    """
+    Public API to align with Revolut/BOI parse_statement signature/shape.
+    """
+    pages = raw_ocr.get("pages", []) or []
+    # Flat text for IBAN/BIC extraction
+    full_text = "\n".join(
+        "\n".join((ln.get("line_text") or "") for ln in pg.get("lines", []))
+        for pg in pages
+    )
+
+    # IBAN / BIC (simple)
+    m_iban = re.search(r"\bIBAN[:\s]+([A-Z]{2}\d{2}[A-Z0-9]{11,30})\b", full_text, re.IGNORECASE)
+    iban = m_iban.group(1).replace(" ", "") if m_iban else None
+    m_bic = re.search(r"\bBIC[:\s]+([A-Z0-9]{8,11})\b", full_text, re.IGNORECASE)
+    bic = m_bic.group(1) if m_bic else None
+
+    # 1) transactions
+    transactions = parse_transactions(pages, iban=iban)
+
+    # 2) group per currency and compute simple totals from rows
+    buckets = _group_by_currency(transactions)
+    currencies = _build_currency_sections_from_rows(buckets)
+
+    # 3) statement dates from transactions
+    if transactions:
+        all_dates = [t.get("transactions_date") for t in transactions if t.get("transactions_date")]
+        start_date = min(all_dates) if all_dates else None
+        end_date   = max(all_dates) if all_dates else None
+    else:
+        start_date = end_date = None
+
+    return {
+        "client": client,
+        "file_name": raw_ocr.get("file_name"),
+        "account_holder": None,     # add later if you choose to parse it
+        "institution": "N26",
+        "account_type": account_type,
+        "iban": iban,
+        "bic": bic,
+        "statement_start_date": start_date,
+        "statement_end_date": end_date,
+        "currencies": currencies,
+    }

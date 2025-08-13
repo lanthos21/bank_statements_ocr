@@ -11,8 +11,7 @@ OCR_SETTINGS = {
 
 from parsers.boi_current import parse_statement as boi_parser
 from parsers.revolut import parse_statement as revolut_parser
-# from parsers.n26_current import parse_statement as n26_parser
-from parsers.n26_current import parse_and_preview_n26 as n26_parser
+from parsers.n26_current import parse_statement as n26_parser
 
 
 BANK_PARSERS = {

@@ -14,9 +14,9 @@ def main():
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut euro with pockets.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\downloadStatement v2.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency2.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 march.pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf"
 
     bank_code, conf, method = detect_bank_provider(pdf_path)
     if not bank_code:
@@ -42,8 +42,7 @@ def main():
 
     # 🔹 Parse into structured format
     parser_func = BANK_PARSERS[bank_code]
-    # structured_data = parser_func(raw_ocr, client=client, account_type=account_type)
-    structured_data = parser_func(raw_ocr, max_rows=15, debug=False)
+    structured_data = parser_func(raw_ocr, client=client, account_type=account_type)
     save_ocr_words_csv(raw_ocr)
     save_ocr_pretty_txt(raw_ocr)
 
@@ -53,7 +52,7 @@ def main():
 
     # Run validator against exactly what was saved
     saved_data = json.loads(Path(output_file).read_text(encoding="utf-8"))
-    # validate_statement_json(saved_data)
+    validate_statement_json(saved_data)
 
     print(f"\n\nStructured data saved to {output_file}")
 
