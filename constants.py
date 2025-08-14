@@ -4,6 +4,9 @@ BANK_PATTERNS = {
     "AIB": [
         r"\bAllied Irish Bank\b", r"\bAIB\b"
     ],
+    "PTSB": [
+        r"\bpermanent tsb\b", r"\bIPBSIE2D\b"
+    ],
     "N26": [
         r"\bNTSB"
     ],

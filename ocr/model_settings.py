@@ -48,6 +48,30 @@ N26_SETTINGS = OcrProfile(
     tesseract=TesseractSettings(oem=1, psm=6, lang="eng"),
 )
 
+PTSB_SETTINGS = OcrProfile(
+    name="PTSB",
+    preprocess=PreprocessSettings(
+        dpi=500,                             # bump a bit for tiny table digits
+        # (If you can crop, exclude the right info panel)
+        # crop_left=0.0, crop_top=0.0, crop_right=0.88, crop_bottom=1.0,  # left 88% only
+        use_adaptive_threshold=False,        # feed grayscale
+        tesseract_handles_threshold=True,    # let Tesseract binarize internally
+        resize_fx=1.5, resize_fy=1.5,       # gentle upscale
+        # resize_interpolation="cubic",        # IMPORTANT when upscaling
+        use_sharpen_kernel=False,            # avoid the 3×3 kernel
+        use_unsharp_mask=True,               # if your pipeline supports it
+        # unsharp_amount=0.7, unsharp_radius=1.2,
+        morph_close=False,                   # closing often fuses table digits
+        enhance_contrast=True,
+        emphasize_dots_dilate=False,         # dilation can glue characters → worse OCR
+        # deskew=True,                         # if you’ve got deskew support
+    ),
+    # PSM 3 = full automatic page segmentation (good for mixed table + text)
+    tesseract=TesseractSettings(oem=3, psm=3, lang="eng",
+        extra="-c preserve_interword_spaces=1"),  # helps keep tokens separated
+)
+
+
 REVOLUT_SETTINGS = OcrProfile(
     name="REVOLUT",
     preprocess=PreprocessSettings(
