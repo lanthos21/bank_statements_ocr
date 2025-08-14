@@ -173,45 +173,123 @@ def _rightmost_numeric_with_x(words: list[dict]) -> tuple[Optional[int], Optiona
 # Opening & Closing balances
 # ----------------------------
 
-def extract_opening_balance_and_start_date(pages: list[dict]) -> tuple[float | None, str | None]:
+def extract_opening_balance_and_start_date(pages: list[dict], debug: bool = False) -> tuple[float | None, str | None]:
     """
-    Find the earliest 'BALANCE FORWARD' line and read its amount.
-    If the amount wrapped to a next line (rare), we peek ahead one line too.
+    Original logic with detailed debug tracing:
+    - On each 'BALANCE FORWARD' line, pick the rightmost numeric on that line.
+    - If none, peek the next line and take its rightmost numeric.
+    - Keep the earliest date seen alongside a 'BALANCE FORWARD'.
     """
+    def dbg(*a):
+        if debug:
+            print(*a)
+
+    def _num_candidates(words: list[dict]) -> list[dict]:
+        """
+        Return a list of numeric candidates with token text, parsed value, and geometry.
+        Joins a trailing '€' token to extend the right edge if present.
+        """
+        out = []
+        tokens = words or []
+        n = len(tokens)
+        for i, w in enumerate(tokens):
+            txt = (w.get("text") or "").strip()
+            if not txt:
+                continue
+            v = parse_currency(txt, strip_currency=False)
+            xl = int(w.get("left", 0))
+            xr = xl + int(w.get("width", 0))
+
+            # join with a trailing '€'
+            if v is None and i + 1 < n:
+                nxt = (tokens[i + 1].get("text") or "").strip()
+                if nxt == "€":
+                    vv = parse_currency(txt + nxt, strip_currency=False)
+                    if vv is not None:
+                        # extend right edge to include '€'
+                        xr = int(tokens[i + 1].get("left", 0)) + int(tokens[i + 1].get("width", 0))
+                        v = vv
+
+            if v is not None:
+                out.append({
+                    "text": txt,
+                    "value": float(v),
+                    "left": xl,
+                    "right": xr,
+                })
+        return out
+
     earliest_date: Optional[str] = None
     opening_value: Optional[float] = None
 
-    for page in pages or []:
+    for pidx, page in enumerate(pages or []):
         lines = page.get("lines", []) or []
         i = 0
         while i < len(lines):
             line = lines[i]
             lt = (line.get("line_text") or "")
-
             if not RE_BAL_FWD.search(lt):
                 i += 1
                 continue
 
-            # same line — prefer this
-            xr, val = _rightmost_numeric_with_x(line.get("words", []) or [])
-            if val is None:
-                # peek next line only (some PDFs wrap the big number)
-                if i + 1 < len(lines):
-                    xr2, v2 = _rightmost_numeric_with_x(lines[i + 1].get("words", []) or [])
-                    if v2 is not None:
-                        val = float(v2)
+            dbg(f"\n🔎 Page {pidx}, line {i} contains 'BALANCE FORWARD':")
+            dbg(f"    line_text: {lt!r}")
 
+            # 1) same-line candidates (your current approach)
+            words = line.get("words", []) or []
+            cands = _num_candidates(words)
+
+            if cands:
+                # choose the rightmost numeric (current behavior)
+                cands_sorted = sorted(cands, key=lambda d: d["right"])
+                chosen = cands_sorted[-1]
+                dbg("    • Same-line numeric candidates (rightmost wins):")
+                for c in cands_sorted:
+                    dbg(f"      - token={c['text']!r:>12}  val={c['value']:>12,.2f}  left={c['left']:>5}  right={c['right']:>5}")
+                dbg(f"    ✅ Chosen (same line): val={chosen['value']:.2f}  right={chosen['right']}")
+
+                val = float(chosen["value"])
+
+            else:
+                dbg("    • No numeric on same line → peeking next line for rightmost numeric…")
+                val = None
+                if i + 1 < len(lines):
+                    next_words = lines[i + 1].get("words", []) or []
+                    next_cands = _num_candidates(next_words)
+                    if next_cands:
+                        next_sorted = sorted(next_cands, key=lambda d: d["right"])
+                        chosen = next_sorted[-1]
+                        for c in next_sorted:
+                            dbg(f"      - (next) token={c['text']!r:>12}  val={c['value']:>12,.2f}  left={c['left']:>5}  right={c['right']:>5}")
+                        dbg(f"    ✅ Chosen (next line): val={chosen['value']:.2f}  right={chosen['right']}")
+                        val = float(chosen["value"])
+                    else:
+                        dbg("    ⚠️ No numeric candidates found on next line either.")
+
+            # 2) date on the BALANCE FORWARD line (if present)
+            d = _find_date_in_text(lt)
+            if d:
+                dbg(f"    📅 Date detected on line: {d}")
+
+            # 3) apply selection to earliest
             if val is not None:
-                d = _find_date_in_text(lt)
                 if d:
                     if earliest_date is None or d < earliest_date:
+                        dbg(f"    ⬆️ Setting earliest_date={d}, opening_value={val:.2f}")
                         earliest_date = d
-                        opening_value = float(val)
+                        opening_value = val
+                    else:
+                        dbg(f"    ℹ️ Found later date {d}; keeping earliest_date={earliest_date}, opening={opening_value}")
                 elif opening_value is None:
-                    opening_value = float(val)
+                    dbg(f"    ⬆️ Setting opening_value={val:.2f} (no date on line)")
+                    opening_value = val
+            else:
+                dbg("    ❌ No opening value resolved for this occurrence.")
 
             i += 1
 
+    dbg("\n===== OPENING BALANCE SUMMARY =====")
+    dbg(f"opening_value={opening_value}  earliest_date={earliest_date}\n")
     return opening_value, earliest_date
 
 
@@ -249,7 +327,6 @@ def extract_closing_balance(pages: list[dict]) -> Optional[float]:
                 best = float(val)  # last wins, pages are in order
 
     return best
-
 
 # ----------------------------
 # Transactions (AIB)
@@ -444,11 +521,11 @@ def extract_iban(pages: list[dict]) -> str | None:
     return None
 
 
-def parse_statement(raw_ocr, client="Unknown", account_type="Unknown"):
-    """
-    Parse an AIB statement into the same multi-currency structure used by Revolut/BOI,
-    with proper opening (BALANCE FORWARD) and closing (last Balance €) balances.
-    """
+def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bool = True):
+    def dbg(*a):
+        if debug:
+            print(*a)
+
     pages = raw_ocr.get("pages", []) or []
 
     # IBAN & currency guess
@@ -458,20 +535,33 @@ def parse_statement(raw_ocr, client="Unknown", account_type="Unknown"):
 
     # Transactions (flat)
     transactions = parse_transactions(pages, iban=iban)
+    dbg(f"🧾 Parsed {len(transactions)} transactions")
 
     # Group by currency (likely one)
     buckets = _group_by_currency(transactions)
+    dbg("🔑 Buckets from rows:", list(buckets.keys()))
 
     # Build per-currency sections from rows
     currencies = _build_currency_sections_from_rows(buckets)
+    for k, sec0 in currencies.items():
+        dbg(f"   - {repr(k)} BEFORE overlay: opening_from_rows={sec0.get('opening_balance')} "
+            f"in={sec0.get('money_in_total')} out={sec0.get('money_out_total')}")
 
-    # Overlay opening/closing from explicit scans
+    # Explicit scans
     opening_val, start_date = extract_opening_balance_and_start_date(pages)
     closing_val = extract_closing_balance(pages)
+    dbg(f"📘 Explicit opening_val={opening_val} start_date={start_date}")
+    dbg(f"📘 Explicit closing_val={closing_val}")
 
-    # Fill into the (only) currency bucket we have or the currency_hint
-    target_cur = next(iter(currencies.keys()), currency_hint)
+    # Choose target currency robustly:
+    # 1) Prefer EUR if present; 2) else first bucket; 3) else currency_hint
+    if "EUR" in currencies:
+        target_cur = "EUR"
+    else:
+        target_cur = next(iter(currencies.keys()), currency_hint)
+    dbg("🎯 target_cur for overlay:", repr(target_cur))
 
+    # Ensure target bucket exists if no tx were parsed (edge case)
     if target_cur not in currencies:
         currencies[target_cur] = {
             "opening_balance": None,
@@ -481,21 +571,35 @@ def parse_statement(raw_ocr, client="Unknown", account_type="Unknown"):
             "closing_balance_calculated": None,
             "transactions": [],
         }
+        dbg(f"ℹ️ Created empty bucket for {repr(target_cur)}")
 
     sec = currencies[target_cur]
 
+    # Overlay explicit opening / closing
     if opening_val is not None:
         sec["opening_balance"] = {"value": float(round(opening_val, 2)), "currency": target_cur}
+        dbg(f"✅ Overlaid OPENING on {repr(target_cur)}:", sec["opening_balance"])
+    else:
+        dbg("⚠️ No explicit opening to overlay")
 
     if closing_val is not None:
         sec["closing_balance_statement"] = {"value": float(round(closing_val, 2)), "currency": target_cur}
+        dbg(f"✅ Overlaid CLOSING on {repr(target_cur)}:", sec["closing_balance_statement"])
+    else:
+        dbg("⚠️ No explicit closing to overlay")
 
-    # Recompute a calculated closing if we now have opening + tx totals
+    # Recompute a calculated closing if we now have opening + totals
     if sec.get("opening_balance") and sec.get("money_in_total") and sec.get("money_out_total"):
         o = float(sec["opening_balance"]["value"])
         inm = float(sec["money_in_total"]["value"])
         outm = float(sec["money_out_total"]["value"])
         sec["closing_balance_calculated"] = {"value": round(o + inm - outm, 2), "currency": target_cur}
+        dbg("🧮 closing_balance_calculated:", sec["closing_balance_calculated"])
+
+    # Final per-currency snapshot
+    for k, s in currencies.items():
+        dbg(f"   - {repr(k)} AFTER overlay: opening={s.get('opening_balance')} "
+            f"closing_stmt={s.get('closing_balance_statement')} closing_calc={s.get('closing_balance_calculated')}")
 
     # Statement dates from transactions (fallback to opening date if none)
     if transactions:
