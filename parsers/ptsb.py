@@ -1,11 +1,13 @@
-# ptsb_current.py
-# PTSB parser:
-# - Header: "Date | Details | Withdrawn | Paid In | Balance"
-# - Amounts are RIGHT-JUSTIFIED under Withdrawn / Paid In / Balance
-# - Opening balance: first "Balance from last stmt"
-# - Closing balance: last  "Closing Balance"
-# - Ignores right-of-table noise by requiring proximity to column right-edges
-# - Transactions shaped like Revolut/BOI JSON
+# parsers/ptsb.py
+# PTSB parser (image-based PDF friendly)
+# Uses header-centers to build true windows for Withdrawn / Paid In / Balance.
+# Robust numeric extraction with:
+#  - token-center windowing
+#  - adjacent-token merge
+#  - whole-window "cents join" (e.g. "2924 81" -> 2924.81)
+#  - slash→7 repair (e.g. "15/30.16" -> 15730.16, "1/54.47" -> 1754.47)
+#  - per-run cents heuristic for dotless reads (e.g. "1564163" -> 15641.63)
+# Adds date carry-forward for rows whose date token drops in OCR.
 
 from __future__ import annotations
 
@@ -21,15 +23,13 @@ from utils import parse_currency  # your existing helper
 # Regexes / Date parsing
 # ----------------------------
 
-# PTSB row dates like "24FEB25" (DDMMMYY or DDMMMYYYY)
-RE_DATE_PTSB = re.compile(r"\b(\d{1,2})([A-Za-z]{3})(\d{2,4})\b")
-
+# Dates like "24APR24" or "24 APR 24" or "4May2024"
+RE_DATE_PTSB = re.compile(r"\b(\d{1,2})\s*([A-Za-z]{3})\s*(\d{2,4})\b")
 _MONTHS = {
     "JAN": "01", "FEB": "02", "MAR": "03", "APR": "04",
     "MAY": "05", "JUN": "06", "JUL": "07", "AUG": "08",
     "SEP": "09", "OCT": "10", "NOV": "11", "DEC": "12",
 }
-
 def _find_date_in_text_ptsb(s: str) -> Optional[str]:
     if not s:
         return None
@@ -43,172 +43,258 @@ def _find_date_in_text_ptsb(s: str) -> Optional[str]:
         return None
     yy = y
     if len(yy) == 2:
-        # assume 20xx
         yy = "20" + yy
     try:
         return f"{int(yy):04d}-{int(mm):02d}-{int(d):02d}"
     except Exception:
         return None
 
-# Row labels we treat specially
-RE_BAL_FROM_LAST = re.compile(r"\bBalance\s+from\s+last\s+stmt\b", re.IGNORECASE)
-RE_CLOSING_BAL   = re.compile(r"\bClosing\s+Balance\b", re.IGNORECASE)
+# Special row labels
+RE_BAL_FROM_LAST = re.compile(
+    r"\b(Balance\s+from\s+last\s+stmt|Balance\s+brought\s+forward|Balance\s+b\/f)\b",
+    re.IGNORECASE,
+)
+RE_CLOSING_BAL = re.compile(
+    r"\b(Closing\s+Balance|Closing\s+bal|Balance\s+carried\s+forward|Closing\s+balance\s+carried\s+forward|Balance\s+c\/f)\b",
+    re.IGNORECASE,
+)
 
 # ----------------------------
-# Header / column detection (PTSB)
+# Small geometry helpers
 # ----------------------------
 
-def _right_edge(w: dict) -> int:
+def _right(w: dict) -> int:
     return int(w.get("left", 0)) + int(w.get("width", 0))
 
-def detect_column_positions_ptsb(lines: list[dict]) -> tuple[dict, int, int] | None:
-    """
-    Locate PTSB headers "Date | Details | Withdrawn | Paid In | Balance".
-    Returns (header_positions, header_start_idx, len(lines)) or None.
+def _center_x(w: dict) -> float:
+    return int(w.get("left", 0)) + 0.5 * int(w.get("width", 0))
 
-    We store RIGHT edges for withdrawn/paidin/balance (amounts are right-justified).
-    """
-    def right_edge(w: dict) -> int:
-        return int(w.get("left", 0)) + int(w.get("width", 0))
+# ----------------------------
+# Column window detection (centered headers)
+# ----------------------------
 
-    for idx, line in enumerate(lines or []):
+def _detect_header_centers(lines: list[dict]) -> Optional[dict]:
+    wd_cx = None
+    pi_span = None  # (min_left, max_right) across 'Paid' and 'In'
+    bal_cx = None
+
+    for line in lines or []:
         words = line.get("words", []) or []
-        if not words:
-            continue
-
-        pos = {
-            "date_left": None,
-            "details_left": None,
-            "withdrawn_right": None,
-            "paidin_right": None,
-            "balance_right": None,
-        }
-
         n = len(words)
         for i, w in enumerate(words):
             t = (w.get("text") or "").strip().lower()
             if not t:
                 continue
 
-            if t == "date" and pos["date_left"] is None:
-                pos["date_left"] = int(w.get("left", 0))
+            if t == "withdrawn" and wd_cx is None:
+                wd_cx = _center_x(w)
 
-            elif t == "details" and pos["details_left"] is None:
-                pos["details_left"] = int(w.get("left", 0))
+            if t == "paid":
+                if i + 1 < n and (words[i+1].get("text") or "").strip().lower() == "in":
+                    lefts = [int(w.get("left", 0)), int(words[i+1].get("left", 0))]
+                    rights = [_right(w), _right(words[i+1])]
+                    pi_span = (float(min(lefts)), float(max(rights)))
+            elif t in ("paidin", "paid-in", "paidin.", "paid-in."):
+                pi_span = (float(int(w.get("left", 0))), float(_right(w)))
 
-            elif t in ("withdrawn",) and pos["withdrawn_right"] is None:
-                pos["withdrawn_right"] = right_edge(w)
+            if t == "balance" and bal_cx is None:
+                bal_cx = _center_x(w)
 
-            elif t in ("paid", "paidin", "paid-in", "paidin.", "paid-in.") and pos["paidin_right"] is None:
-                pos["paidin_right"] = right_edge(w)
-            elif t == "in" and pos["paidin_right"] is None:
-                # handle split "Paid In"
-                prev = (words[i-1].get("text") or "").strip().lower() if i - 1 >= 0 else ""
-                if prev == "paid":
-                    pos["paidin_right"] = right_edge(w)
+    if wd_cx is None or pi_span is None or bal_cx is None:
+        return None
 
-            elif t == "balance" and pos["balance_right"] is None:
-                pos["balance_right"] = right_edge(w)
+    paidin_cx = (pi_span[0] + pi_span[1]) * 0.5
+    return {"withdrawn_cx": float(wd_cx), "paidin_cx": float(paidin_cx), "balance_cx": float(bal_cx)}
 
-        if all(pos[k] is not None for k in ("date_left", "details_left", "withdrawn_right", "paidin_right", "balance_right")):
-            return pos, idx, len(lines)
+def _build_column_windows_from_centers(centers: dict) -> dict:
+    cx_w = centers["withdrawn_cx"]
+    cx_p = centers["paidin_cx"]
+    cx_b = centers["balance_cx"]
 
-    return None
+    gap_wp = abs(cx_p - cx_w)
+    gap_pb = abs(cx_b - cx_p)
+    gap = min(gap_wp, gap_pb)
 
-def categorise_amount_by_right_edge_ptsb(x_right: int, header_positions: dict, margin: int = 120) -> str:
-    """
-    Classify token into 'debit' | 'credit' | 'balance' by proximity to the RIGHT edges.
-    """
-    x_right = int(x_right)
-    best = ("unknown", margin + 1)
-    for k, label in (("withdrawn_right", "debit"), ("paidin_right", "credit"), ("balance_right", "balance")):
-        pos = header_positions.get(k)
-        if pos is None:
-            continue
-        d = abs(x_right - int(pos))
-        if d < best[1]:
-            best = (label, d)
-    return best[0] if best[1] <= margin else "unknown"
+    HALF_FACTOR = 0.50  # tolerant but avoids info panel
+    half = gap * HALF_FACTOR
+    def win(cx: float) -> tuple[float, float]:
+        return (cx - half, cx + half)
+
+    return {
+        "withdrawn_window": win(cx_w),
+        "paidin_window":    win(cx_p),
+        "balance_window":   win(cx_b),
+    }
+
+def detect_column_windows_ptsb(lines: list[dict]) -> Optional[tuple[dict, int, int]]:
+    centers = _detect_header_centers(lines)
+    if not centers:
+        return None
+
+    windows = _build_column_windows_from_centers(centers)
+
+    hdr_idx = 0
+    for i, line in enumerate(lines or []):
+        txt = (line.get("line_text") or "").lower()
+        if all(k in txt for k in ("date", "details")) and ("withdrawn" in txt or "paid" in txt or "balance" in txt):
+            hdr_idx = i
+            break
+
+    return windows, hdr_idx, len(lines)
 
 # ----------------------------
-# Numeric extraction helpers (PTSB)
+# Amount extraction in a window
 # ----------------------------
 
-def _rightmost_numeric_within_column(words: list[dict], col_right: int, window: int = 80) -> tuple[Optional[int], Optional[float]]:
+_NUMLIKE = re.compile(r"[0-9.,\-€£$/]")
+# --- FIX 1: safe replacement using \g<1>7\g<2> ---
+def _slash_to_seven(s: str) -> str:
+    # Replace digit '/' digit with digit '7' digit (e.g. 15/30.16 -> 15730.16)
+    return re.sub(r"(\d)\s*/\s*(\d)", r"\g<1>7\g<2>", s)
+
+# --- FIX 2: prefer the repaired candidate before the cleaned one ---
+def _normalize_for_parse(s: str) -> list[str]:
+    raw = s
+    cleaned = re.sub(r"[^0-9,\.\-€£$]", "", raw)
+
+    # Try in this order: raw → slash→7(raw) → cleaned → slash→7(cleaned)
+    ordered = [raw, _slash_to_seven(raw), cleaned, _slash_to_seven(cleaned)]
+
+    out = []
+    seen = set()
+    for base in ordered:
+        for v in (base, base.replace("O", "0").replace("o", "0")):
+            if v not in seen:
+                out.append(v)
+                seen.add(v)
+    return out
+
+def _best_amount_in_window(
+    words: list[dict],
+    window: tuple[float, float],
+    pad: int = 18,
+    merge_gap_px: int = 28,
+    debug: bool = False,
+    dbg=print,
+    label: str = ""
+) -> tuple[Optional[int], Optional[float]]:
     """
-    Return (x_right, value) for the numeric whose RIGHT edge is closest to the given column right edge,
-    limited to a small window so we don't pick numbers from the info panel to the right of the table.
+    Find best numeric in [window±pad] using token-center.
+    - Merge adjacent tokens if gap ≤ merge_gap_px.
+    - Try multiple parse candidates, including slash→7 repair.
+    - Per-run cents heuristic for dotless integers (≥3 digits).
+    - Whole-window "cents join" when no dot in any token and multiple runs exist.
+    Returns (x_right_of_choice, value) or (None, None).
     """
-    best = None  # (abs_delta, xr, value)
-    tokens = words or []
-    n = len(tokens)
+    c0, c1 = float(window[0]) - pad, float(window[1]) + pad
+    cand = [w for w in (words or [])
+            if _NUMLIKE.search((w.get("text") or "")) and (c0 <= _center_x(w) <= c1)]
+    if not cand:
+        if debug and label:
+            dbg(f"— {label}: window=({window[0]:.1f},{window[1]:.1f}) → no numeric tokens by center")
+        return (None, None)
 
-    for i, w in enumerate(tokens):
-        t = (w.get("text") or "").strip()
-        if not t:
-            continue
+    cand.sort(key=lambda w: int(w.get("left", 0)))
+    runs, cur, last_r = [], [], None
+    for w in cand:
+        l = int(w.get("left", 0)); r = _right(w)
+        if last_r is None or l - last_r <= merge_gap_px:
+            cur.append(w)
+        else:
+            if cur: runs.append(cur)
+            cur = [w]
+        last_r = r
+    if cur: runs.append(cur)
 
-        v = parse_currency(t, strip_currency=False)
-        xr = _right_edge(w)
+    best = None  # (xr, float(value), src)
 
-        # Join with a trailing symbol (rare on PTSB, but harmless)
-        if v is None and i + 1 < n:
-            nxt = (tokens[i + 1].get("text") or "").strip()
-            if nxt == "€":
-                v = parse_currency(t + nxt, strip_currency=False)
-                xr = _right_edge(tokens[i + 1])
+    # First pass: evaluate each run
+    for run in runs:
+        xr = max(_right(w) for w in run)
+        raw_join = "".join((w.get("text") or "") for w in run).replace(" ", "")
+
+        v, src, used_cents = None, "raw", False
+        for cand_s in _normalize_for_parse(raw_join):
+            v = parse_currency(cand_s, strip_currency=False)
+            if v is not None:
+                src = f"parsed:{cand_s!r}"
+                break
+
+        if v is None:
+            digits = re.sub(r"[^\d\-]", "", raw_join)
+            if re.fullmatch(r"-?\d{3,}", digits):
+                sign = -1 if digits.startswith("-") else 1
+                v = sign * (int(digits.lstrip("-")) / 100.0)
+                used_cents = True
+                src = "cents-heuristic(run)"
+
+        if debug and label:
+            dbg(f"   · {label} RUN raw={raw_join!r} → v={v!r} xr={xr} src={src}{' (USED)' if used_cents else ''}")
 
         if v is None:
             continue
+        if best is None or xr > best[0]:
+            best = (xr, float(v), src)
 
-        delta = abs(int(xr) - int(col_right))
-        if delta <= window:
-            if best is None or delta < best[0] or (delta == best[0] and xr > best[1]):
-                best = (delta, xr, float(v))
+    # Second pass: if no dot/comma in any token and >1 run, attempt whole-window cents join
+    any_dot = any("." in (w.get("text") or "") or "," in (w.get("text") or "") for w in cand)
+    if not any_dot and len(runs) >= 2:
+        all_digits = "".join(re.sub(r"[^\d]", "", (w.get("text") or "")) for w in cand)
+        if re.fullmatch(r"\d{3,}", all_digits):
+            xr = max(_right(w) for w in cand)
+            v = int(all_digits) / 100.0
+            if debug and label:
+                dbg(f"   · {label} WHOLE-WINDOW cents-join digits={all_digits} → v={v:.2f} xr={xr}")
+            if best is None or xr >= best[0]:
+                best = (xr, float(v), "cents-join(window)")
 
-    return (None, None) if best is None else (best[1], best[2])
+    if not best:
+        if debug and label:
+            dbg(f"— {label}: no parseable runs")
+        return (None, None)
+
+    if debug and label:
+        dbg(f"— {label}: BEST val={best[1]:.2f} xr={best[0]} src={best[2]}")
+    return (best[0], best[1])
 
 # ----------------------------
-# Opening & Closing balances (PTSB)
+# Opening & Closing using labelled rows
 # ----------------------------
 
-def extract_opening_closing_ptsb(pages: list[dict]) -> tuple[float | None, float | None]:
-    """
-    Opening  = first  row whose description matches 'Balance from last stmt' (take its Balance column value)
-    Closing  = last   row whose description matches 'Closing Balance'       (take its Balance column value)
-    Uses header positions per page and ignores right-of-table noise.
-    """
+def extract_opening_closing_ptsb(
+    pages: list[dict],
+    debug: bool = False,
+    dbg=print
+) -> tuple[float | None, float | None]:
     opening_value: Optional[float] = None
     closing_value: Optional[float] = None
 
-    last_header_positions: Optional[dict] = None
+    last_windows: Optional[dict] = None
 
-    for page in pages or []:
+    for pidx, page in enumerate(pages or []):
         lines = page.get("lines", []) or []
-        hdr = detect_column_positions_ptsb(lines)
+        hdr = detect_column_windows_ptsb(lines)
         if hdr:
-            last_header_positions = hdr[0]
+            last_windows = hdr[0]
 
-        pos = last_header_positions
-        if not pos:
+        if not last_windows:
             continue
 
-        bal_r = int(pos["balance_right"])
+        bal_win = last_windows["balance_window"]
 
         for line in lines:
             ltxt = (line.get("line_text") or "")
             words = line.get("words", []) or []
 
             if RE_BAL_FROM_LAST.search(ltxt) and opening_value is None:
-                # take balance column value near bal_r
-                xr, val = _rightmost_numeric_within_column(words, bal_r, window=80)
+                _, val = _best_amount_in_window(words, bal_win, debug=debug, dbg=dbg, label="OPENING balance")
                 if val is not None:
                     opening_value = float(val)
 
             if RE_CLOSING_BAL.search(ltxt):
-                xr, val = _rightmost_numeric_within_column(words, bal_r, window=80)
+                _, val = _best_amount_in_window(words, bal_win, debug=debug, dbg=dbg, label="CLOSING balance")
                 if val is not None:
-                    closing_value = float(val)  # last one wins across pages
+                    closing_value = float(val)  # last wins
 
     return opening_value, closing_value
 
@@ -218,39 +304,46 @@ def extract_opening_closing_ptsb(pages: list[dict]) -> tuple[float | None, float
 
 def parse_transactions_ptsb(
     pages: list[dict],
-    iban: str | None = None
-) -> list[dict]:
+    iban: str | None = None,
+    debug: bool = False,
+    dbg=print,
+    focus_terms: list[str] | None = None
+) -> tuple[list[dict], list[dict]]:
     """
-    Parse all PTSB transaction rows across pages. Returns a flat list of transactions.
-    - Every row has a date token like 24FEB25 → we use it directly (no carry-forward).
-    - Skip "Balance from last stmt" and "Closing Balance" rows.
-    - Classify numbers by right-edge proximity to Withdrawn/Paid In/Balance columns.
-    - Ignore right-of-table noise by only accepting numbers within a window of column edges.
+    Parse all PTSB transaction rows across pages.
+    - Date carry-forward: if line has numbers but date OCR is missing, inherit the last seen date.
+    - Skip special rows.
+    - Extract debit/credit/balance by windowed token-center logic with robust numeric parsing.
+    Returns (transactions, debug_rows)
     """
     all_transactions: List[dict] = []
+    debug_rows: List[dict] = []
+
     current_currency = "GBP" if iban and iban.upper().startswith("GB") else "EUR"
     seq = 0
-
-    last_header_positions: Optional[dict] = None
+    last_windows: Optional[dict] = None
+    last_date: Optional[str] = None  # carry-forward date
+    WINDOW_PAD = 18
+    MERGE_GAP = 28
 
     for page_num, page in enumerate(pages or []):
         lines = page.get("lines", []) or []
-        header = detect_column_positions_ptsb(lines)
+        header = detect_column_windows_ptsb(lines)
 
         if header:
-            header_positions, start_idx, end_idx = header
-            last_header_positions = header_positions
-            line_start = start_idx + 1
-            line_end = end_idx
+            windows, start_idx, end_idx = header
+            last_windows = windows
+            line_start, line_end = start_idx + 1, end_idx
+            if debug:
+                dbg(f"\n📐 P{page_num} windows:"
+                    f"  W[{windows['withdrawn_window'][0]:.1f},{windows['withdrawn_window'][1]:.1f}]"
+                    f"  P[{windows['paidin_window'][0]:.1f},{windows['paidin_window'][1]:.1f}]"
+                    f"  B[{windows['balance_window'][0]:.1f},{windows['balance_window'][1]:.1f}]")
         else:
-            if last_header_positions is None:
+            if last_windows is None:
                 continue
-            header_positions = last_header_positions
-            line_start = 0
-            line_end = len(lines)
-
-        bal_r = int(header_positions["balance_right"])
-        win = 80  # small window to avoid info table
+            windows = last_windows
+            line_start, line_end = 0, len(lines)
 
         for line in lines[line_start: line_end]:
             words = line.get("words", []) or []
@@ -258,74 +351,81 @@ def parse_transactions_ptsb(
                 continue
 
             ltxt = (line.get("line_text") or "")
+            y = int(words[0].get("top", 0))
 
-            # Skip synthetic/opening/closing rows
+            # Skip labelled/synthetic rows
             if RE_BAL_FROM_LAST.search(ltxt) or RE_CLOSING_BAL.search(ltxt):
                 continue
 
-            # Require a date on each row (PTSB format)
-            transaction_date = _find_date_in_text_ptsb(ltxt)
-            if transaction_date is None:
-                # not a transaction row
+            # Try to get a date; if missing, we'll carry-forward later if amounts exist
+            tdate = _find_date_in_text_ptsb(ltxt)
+            if tdate is not None:
+                last_date = tdate
+
+            focus = (not focus_terms) or any(k.lower() in ltxt.lower() for k in (focus_terms or []))
+            if debug and focus and tdate:
+                dbg(f"\nP{page_num} y≈{y} {tdate}  {ltxt!r}")
+            elif debug and focus and not tdate:
+                dbg(f"\nP{page_num} y≈{y} —no-date—  {ltxt!r}")
+
+            # Extract amounts
+            _, debit  = _best_amount_in_window(words, windows["withdrawn_window"], pad=WINDOW_PAD, merge_gap_px=MERGE_GAP, debug=debug and focus, dbg=dbg, label="Withdrawn")
+            _, credit = _best_amount_in_window(words, windows["paidin_window"],    pad=WINDOW_PAD, merge_gap_px=MERGE_GAP, debug=debug and focus, dbg=dbg, label="Paid In")
+            _, bal    = _best_amount_in_window(words, windows["balance_window"],   pad=WINDOW_PAD, merge_gap_px=MERGE_GAP, debug=debug and focus, dbg=dbg, label="Balance")
+
+            # If we have no numeric in any window, skip (header/separator/info)
+            if (debit is None or debit == 0.0) and (credit is None or credit == 0.0) and bal is None:
                 continue
 
-            df = pd.DataFrame(words)
-            if df.empty:
+            # If OCR dropped the date on this row, carry-forward the last seen date
+            row_date = tdate if tdate is not None else last_date
+            if row_date is None:
+                # Still no date → too risky to keep
+                if debug and focus:
+                    dbg("   · decision: SKIP row (no date and no carry-forward available)")
                 continue
 
-            df["right"] = df["left"] + df["width"]
-
-            # Only consider numeric-looking tokens
-            def _val(x):
-                return parse_currency(x, strip_currency=False)
-
-            df["amount_val"] = df["text"].apply(_val)
-            df["category"] = df.apply(
-                lambda r: categorise_amount_by_right_edge_ptsb(int(r["right"]), header_positions), axis=1
-            )
-
-            # For balance, use the restricted window near balance_right to avoid info table
-            balance_vals = df.loc[(df["amount_val"].notna()) & (df["category"] == "balance"), ["right", "amount_val"]]
-            if not balance_vals.empty:
-                # Filter by window
-                balance_vals = balance_vals.assign(delta=(balance_vals["right"] - bal_r).abs())
-                balance_vals = balance_vals.loc[balance_vals["delta"] <= win]
-
-            withdrawn_vals = df.loc[(df["amount_val"].notna()) & (df["category"] == "debit"), ["right", "amount_val"]]
-            paidin_vals    = df.loc[(df["amount_val"].notna()) & (df["category"] == "credit"), ["right", "amount_val"]]
-
-            debit   = float(withdrawn_vals.sort_values("right")["amount_val"].iloc[-1]) if not withdrawn_vals.empty else 0.0
-            credit  = float(paidin_vals.sort_values("right")["amount_val"].iloc[-1])    if not paidin_vals.empty    else 0.0
-            stmt_balance = float(balance_vals.sort_values("right")["amount_val"].iloc[-1]) if not balance_vals.empty else None
-
-            # If nothing numeric in the amount columns, skip (likely header/separator/noise)
-            if debit == 0.0 and credit == 0.0 and stmt_balance is None:
-                continue
-
-            # Clean description: remove the date token to keep merchant text clean
+            # Clean description: remove the first matched date token (if any)
             clean_desc = ltxt
             dm = RE_DATE_PTSB.search(clean_desc)
             if dm:
                 clean_desc = clean_desc.replace(dm.group(0), "").strip(" |-")
 
-            all_transactions.append({
+            tx_type = "credit" if (credit or 0.0) > 0 else "debit"
+            amt_val = float(credit if (credit or 0.0) > 0 else (debit or 0.0))
+
+            tx = {
                 "seq": seq,
-                "transactions_date": transaction_date,
-                "transaction_type": "credit" if credit > 0 else "debit",
+                "transactions_date": row_date,
+                "transaction_type": tx_type,
                 "description": clean_desc,
                 "amount": {
-                    "value": credit if credit > 0 else debit,
+                    "value": amt_val,
                     "currency": current_currency,
                 },
-                "balance_after_statement": None if stmt_balance is None else {
-                    "value": stmt_balance,
+                "balance_after_statement": None if bal is None else {
+                    "value": float(bal),
                     "currency": current_currency,
                 },
                 "balance_after_calculated": None,
-            })
+            }
+            all_transactions.append(tx)
             seq += 1
 
-    return all_transactions
+            debug_rows.append({
+                "page": page_num,
+                "y": y,
+                "date": row_date,
+                "line": ltxt,
+                "debit": float(debit) if debit is not None else None,
+                "credit": float(credit) if credit is not None else None,
+                "balance": float(bal) if bal is not None else None,
+            })
+
+            if debug and focus:
+                dbg(f"   · decision: KEEP  debit={debit if debit is not None else '—'}  credit={credit if credit is not None else '—'}  balance={bal if bal is not None else '—'}")
+
+    return all_transactions, debug_rows
 
 # ----------------------------
 # Build multi-currency sections (from rows)
@@ -338,19 +438,13 @@ def _group_by_currency(transactions: List[dict]) -> Dict[str, List[dict]]:
         if cur:
             buckets[cur].append(t)
     for cur in buckets:
-        buckets[cur].sort(key=lambda t: t.get("seq", 0))  # preserve statement order
+        buckets[cur].sort(key=lambda t: t.get("seq", 0))  # preserve order
     return buckets
 
 def _derive_open_close_from_rows(txs: List[dict]) -> tuple[float | None, float | None]:
-    """
-    Opening from rows (fallback): reverse the first transaction against its statement balance (if present).
-    Closing from rows: last statement balance (if present).
-    """
     if not txs:
         return None, None
-
-    first = txs[0]
-    last  = txs[-1]
+    first, last = txs[0], txs[-1]
 
     first_bal = (first.get("balance_after_statement") or {}).get("value")
     first_amt = first.get("amount", {}).get("value")
@@ -395,7 +489,7 @@ def _build_currency_sections_from_rows(buckets: Dict[str, List[dict]]) -> Dict[s
     return out
 
 # ----------------------------
-# IBAN (unchanged approach)
+# IBAN extraction
 # ----------------------------
 
 def extract_iban(pages: list[dict]) -> str | None:
@@ -412,7 +506,7 @@ def extract_iban(pages: list[dict]) -> str | None:
     return None
 
 # ----------------------------
-# Public entrypoint (PTSB)
+# Public entrypoint
 # ----------------------------
 
 def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bool = True):
@@ -422,30 +516,30 @@ def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bo
 
     pages = raw_ocr.get("pages", []) or []
 
-    # IBAN & currency guess
+    # IBAN & currency hint
     iban = extract_iban(pages)
     currency_hint = "GBP" if iban and iban.upper().startswith("GB") else "EUR"
 
-    # Transactions (flat)
-    transactions = parse_transactions_ptsb(pages, iban=iban)
+    # Transactions (with debug rows)
+    transactions, debug_rows = parse_transactions_ptsb(
+        pages, iban=iban, debug=debug, dbg=dbg, focus_terms=["5.40","APCOA","Q PARK","€5.40","5,40"]  # set to ["APCOA","5.40"] if you want to zoom logs
+    )
     dbg(f"🧾 Parsed {len(transactions)} transactions")
 
-    # Group by currency
+    # Group by currency & per-currency sections
     buckets = _group_by_currency(transactions)
     dbg("🔑 Buckets from rows:", list(buckets.keys()))
-
-    # Build per-currency sections from rows
     currencies = _build_currency_sections_from_rows(buckets)
     for k, sec0 in currencies.items():
-        dbg(f"   - {repr(k)} BEFORE overlay: opening_from_rows={sec0.get('opening_balance')} "
+        dbg(f"   - {repr(k)} BEFORE overlay: open_from_rows={sec0.get('opening_balance')} "
             f"in={sec0.get('money_in_total')} out={sec0.get('money_out_total')}")
 
-    # Explicit opening/closing from labelled rows
-    opening_val, closing_val = extract_opening_closing_ptsb(pages)
+    # Explicit opening/closing using labelled rows (robust)
+    opening_val, closing_val = extract_opening_closing_ptsb(pages, debug=debug, dbg=dbg)
     dbg(f"📘 Explicit opening_val={opening_val}")
     dbg(f"📘 Explicit closing_val={closing_val}")
 
-    # Choose target currency robustly:
+    # Choose target currency
     target_cur = "EUR" if "EUR" in currencies else next(iter(currencies.keys()), currency_hint)
     dbg("🎯 target_cur for overlay:", repr(target_cur))
 
@@ -474,7 +568,7 @@ def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bo
     else:
         dbg("⚠️ No explicit closing to overlay")
 
-    # Recompute a calculated closing if we now have opening + totals
+    # Recompute calculated closing if we have opening + totals
     if sec.get("opening_balance") and sec.get("money_in_total") and sec.get("money_out_total"):
         o = float(sec["opening_balance"]["value"])
         inm = float(sec["money_in_total"]["value"])
@@ -490,6 +584,20 @@ def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bo
     else:
         start_date = None
         end_date = None
+
+    # Optional: write a quick CSV of row decisions to help spot misses
+    if debug and debug_rows:
+        try:
+            import os, csv
+            os.makedirs("results", exist_ok=True)
+            dbg_csv = os.path.join("results", "ptsb_debug_rows.csv")
+            with open(dbg_csv, "w", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=["page","y","date","line","debit","credit","balance"])
+                w.writeheader()
+                w.writerows(debug_rows)
+            print(f"🧪 PTSB debug rows saved to {dbg_csv}")
+        except Exception as e:
+            print(f"⚠️ Failed to write ptsb_debug_rows.csv: {e}")
 
     return {
         "client": client,
