@@ -223,100 +223,55 @@ def extract_closing_balance(pages: list[dict]) -> Optional[float]:
 # ----------------------------
 
 def parse_transactions(pages: list[dict], iban: str | None = None) -> list[dict]:
-    """
-    Parse rows using column geometry:
-    - debit/credit picked by right-edge proximity as before
-    - description built ONLY from tokens inside the Details column band
-    """
-    all_transactions: List[dict] = []
+    all_transactions = []
     current_currency = "GBP" if iban and iban.upper().startswith("GB") else "EUR"
     seq = 0
-
-    # how wide to allow around boundaries
-    PAD_LEFT  = 6
-    PAD_RIGHT = 8
-    MIN_GAP_TO_BAL = 140  # keep amounts a safe distance from Balance column
-
     for page_num, page in enumerate(pages or []):
         lines = page.get("lines", []) or []
         header = detect_column_positions(lines)
         if not header:
             continue
-
         header_positions, start_idx, end_idx = header
-        details_left   = int(header_positions["details_left"])
-        debit_right    = int(header_positions["debit_right"])
-        credit_right   = int(header_positions["credit_right"])
-        balance_right  = int(header_positions["balance_right"])
-
-        # right boundary of the Details text block = start of the first amount column
-        details_right_limit = min(debit_right, credit_right, balance_right) - PAD_RIGHT
-
-        last_seen_date: Optional[str] = None
-
-        for line in lines[start_idx + 1 : end_idx]:
-            ltxt  = (line.get("line_text") or "")
+        last_seen_date = None
+        for line in lines[start_idx + 1: end_idx]:
+            ltxt = line.get("line_text", "") or ""
+            if RE_BAL_FWD.search(ltxt):
+                d = _find_date_in_text(ltxt)
+                if d:
+                    last_seen_date = d
+                continue
             words = line.get("words", []) or []
-
-            # update date (only used to gate rows until we see first date)
+            if not words:
+                continue
             d = _find_date_in_text(ltxt)
             if d:
                 last_seen_date = d
-
-            if RE_BAL_FWD.search(ltxt):
-                # skip the BALANCE FORWARD row as a transaction
+            if last_seen_date is None:
                 continue
-
-            if not words or last_seen_date is None:
-                continue
-
             df = pd.DataFrame(words)
             if df.empty:
                 continue
-
-            df["left"]  = df["left"].astype(int)
-            df["right"] = (df["left"] + df["width"]).astype(int)
-
-            # classify numbers by proximity to amount columns
+            df["right"] = df["left"] + df["width"]
             df["amount_val"] = df["text"].apply(lambda x: parse_currency(x, strip_currency=False))
-            df["category"]   = df.apply(lambda r: categorise_amount_by_right_edge(int(r["right"]), header_positions), axis=1)
-
-            # pick debit/credit candidates (rightmost wins)
-            debit_vals  = df.loc[(df["amount_val"].notna()) & (df["category"] == "debit"),  ["right","amount_val"]]
-            credit_vals = df.loc[(df["amount_val"].notna()) & (df["category"] == "credit"), ["right","amount_val"]]
-
-            # keep only amounts that are safely to the left of the Balance column
-            if not debit_vals.empty:
-                debit_vals = debit_vals[debit_vals["right"] < (balance_right - MIN_GAP_TO_BAL)]
-            if not credit_vals.empty:
-                credit_vals = credit_vals[credit_vals["right"] < (balance_right - MIN_GAP_TO_BAL)]
-
-            debit  = float(debit_vals.sort_values("right")["amount_val"].iloc[-1])   if not debit_vals.empty  else 0.0
-            credit = float(credit_vals.sort_values("right")["amount_val"].iloc[-1])  if not credit_vals.empty else 0.0
-
-            # require one of debit/credit
+            df["category"] = df.apply(lambda r: categorise_amount_by_right_edge(int(r["right"]), header_positions), axis=1)
+            debit_vals   = df.loc[(df["amount_val"].notna()) & (df["category"] == "debit"),   ["right","amount_val"]]
+            credit_vals  = df.loc[(df["amount_val"].notna()) & (df["category"] == "credit"),  ["right","amount_val"]]
+            debit  = float(debit_vals.sort_values("right")["amount_val"].iloc[-1]) if not debit_vals.empty else 0.0
+            credit = float(credit_vals.sort_values("right")["amount_val"].iloc[-1]) if not credit_vals.empty else 0.0
             if debit == 0.0 and credit == 0.0:
                 continue
 
-            # ===== Build description from the Details column band only =====
-            # tokens whose geometry falls within Details [details_left .. details_right_limit]
-            detail_tokens = []
+            # Build description robustly: remove transaction date + amounts + currency tokens
+            clean_desc = ltxt.strip()
+            if last_seen_date:
+                for variant in date_variants(last_seen_date):
+                    if variant in clean_desc:
+                        clean_desc = clean_desc.replace(variant, "")
             for w in words:
                 t = (w.get("text") or "").strip()
-                if not t:
-                    continue
-                l = int(w.get("left", 0))
-                r = l + int(w.get("width", 0))
-                # inside details band
-                if (l >= details_left - PAD_LEFT) and (r <= details_right_limit):
-                    # ignore obvious separators & money/currency tokens
-                    if t in {"|", "€", "£"}:
-                        continue
-                    if parse_currency(t, strip_currency=False) is not None:
-                        continue
-                    detail_tokens.append(t)
-
-            clean_desc = " ".join(detail_tokens).strip()
+                if parse_currency(t, strip_currency=False) is not None or _is_currency_token(t):
+                    clean_desc = clean_desc.replace(t, "")
+            clean_desc = clean_desc.strip(" |-")
 
             all_transactions.append({
                 "seq": seq,
@@ -326,7 +281,6 @@ def parse_transactions(pages: list[dict], iban: str | None = None) -> list[dict]
                 "amount": credit if credit > 0 else debit,
             })
             seq += 1
-
     return all_transactions
 
 # ----------------------------

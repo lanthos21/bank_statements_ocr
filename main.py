@@ -4,7 +4,7 @@ from ocr.ocr import ocr_pdf_to_raw_data
 from mapping import OCR_SETTINGS, BANK_PARSERS
 from ocr.detect_bank import detect_bank_provider
 from ocr.ocr_dump import save_ocr_words_csv, save_ocr_pretty_txt
-from validator import validate_statement_json
+from validator2 import validate_statement_json
 
 
 def main():
@@ -12,7 +12,7 @@ def main():
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\downloadStatement v2.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #2587 april.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\Copy of aib ca #8056 04.06.24 - 13.01.25-7861.pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\marlon aib #061 from  3 may to 9 jan-5933.pdf"
 
     bank_code, conf, method = detect_bank_provider(pdf_path)
     if not bank_code:
