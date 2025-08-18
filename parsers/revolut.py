@@ -362,56 +362,85 @@ def collect_currency_summaries_from_totals(pages: list[dict], infer_page_currenc
     return summaries
 
 
-def build_currency_sections(buckets: Dict[str, List[dict]], summaries: Dict[str, dict]) -> Dict[str, Any]:
-    out: Dict[str, Any] = {}
-    all_currencies = set(buckets.keys()) | set(summaries.keys())
+def build_currency_sections_balances(
+    buckets: Dict[str, List[dict]],
+    summaries: Dict[str, dict],
+) -> Dict[str, Any]:
+    """
+    New strict schema:
 
+    currencies: {
+      <CUR>: {
+        balances: {
+          opening_balance: { summary_table: float|None, transactions_table: float|None },
+          money_in_total:  { summary_table: float|None, transactions_table: float },
+          money_out_total: { summary_table: float|None, transactions_table: float },
+          closing_balance: { summary_table: float|None, transactions_table: float|None, calculated: float|None }
+        },
+        transactions: [...]
+      }
+    }
+    """
+    out: Dict[str, Any] = {}
+
+    all_currencies = set(buckets.keys()) | set(summaries.keys())
     for cur in sorted(all_currencies):
         txs = buckets.get(cur, [])
 
-        # derivations from transactions
-        money_in  = sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "credit")
-        money_out = sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "debit")
+        # --- Transactions-side figures (we no longer have per-row balances) ---
+        tx_money_in  = round(sum(float(t["amount"]["value"]) for t in txs
+                                 if t.get("transaction_type") == "credit"), 2)
+        tx_money_out = round(sum(float(t["amount"]["value"]) for t in txs
+                                 if t.get("transaction_type") == "debit"), 2)
 
-        # infer opening/closing from txs if needed
-        opening_from_txs = None
-        if txs:
-            first = txs[0]
-            bal = first.get("balance_after_statement", {}).get("value")
-            amt = first.get("amount", {}).get("value")
-            typ = first.get("transaction_type")
-            if bal is not None and amt is not None and typ in ("credit", "debit"):
-                opening_from_txs = round(float(bal) - float(amt), 2) if typ == "credit" else round(float(bal) + float(amt), 2)
-        closing_stmt_from_txs = txs[-1].get("balance_after_statement", {}).get("value") if txs else None
+        # No tx_opening / tx_closing_stmt without a balance column
+        tx_opening = None
+        tx_closing_stmt = None
 
-        # overlay statement totals if present
+        # --- Summary-table figures (from detected totals per currency) ---
         s = summaries.get(cur, {}) or {}
-        opening = s.get("opening") if s.get("opening") is not None else opening_from_txs
-        total_out = s.get("out") if s.get("out") is not None else round(money_out, 2)
-        total_in  = s.get("in")  if s.get("in")  is not None else round(money_in, 2)
-        closing_stmt = s.get("closing") if s.get("closing") is not None else closing_stmt_from_txs
+        sum_opening = _num_or_none(s.get("opening"))
+        sum_out     = _num_or_none(s.get("out"))
+        sum_in      = _num_or_none(s.get("in"))
+        sum_closing = _num_or_none(s.get("closing"))
 
-        closing_calc = None
-        if opening is not None:
-            closing_calc = round(float(opening) + float(total_in) - float(total_out), 2)
+        # --- Calculated closing ---
+        # Prefer a transactions-side calculation if we ever add tx_opening back.
+        # For now (no per-row balances), use summary side when fully available.
+        calculated = None
+        if (sum_opening is not None) and (sum_in is not None) and (sum_out is not None):
+            calculated = round(sum_opening + sum_in - sum_out, 2)
 
         out[cur] = {
-            "opening_balance": None if opening is None else {"value": float(opening), "currency": cur},
-            "money_in_total":  {"value": float(total_in),  "currency": cur},
-            "money_out_total": {"value": float(total_out), "currency": cur},
-            "closing_balance_statement": None if closing_stmt is None else {"value": float(closing_stmt), "currency": cur},
-            "closing_balance_calculated": None if closing_calc is None else {"value": float(closing_calc), "currency": cur},
+            "balances": {
+                "opening_balance": {
+                    "summary_table":      sum_opening,
+                    "transactions_table": tx_opening,      # stays None (no per-row balances)
+                },
+                "money_in_total": {
+                    "summary_table":      sum_in,
+                    "transactions_table": tx_money_in,
+                },
+                "money_out_total": {
+                    "summary_table":      sum_out,
+                    "transactions_table": tx_money_out,
+                },
+                "closing_balance": {
+                    "summary_table":      sum_closing,
+                    "transactions_table": tx_closing_stmt, # stays None (no per-row balances)
+                    "calculated":         calculated,
+                },
+            },
             "transactions": txs,
         }
+
     return out
 
 
 def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[dict]:
     """
-    Parse all transaction rows across pages. Returns a flat list of transaction dicts.
-    Each includes its own currency in the 'amount' block.
+    Parse transactions without per-row statement balances.
     """
-
     def infer_page_currency(page: dict, prev_cur: Optional[str]) -> str:
         cur = page.get("currency")
         if isinstance(cur, str) and len(cur) == 3:
@@ -423,30 +452,21 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
         return prev_cur or "EUR"
 
     all_transactions: List[dict] = []
-    running_balance_cents: Optional[int] = None
     current_currency: Optional[str] = None
 
-    # (Optional) pick up header date range; not essential for parsing
     start_date_str, _ = statement_date_range(pages)
     initial_value_date = parse_date(start_date_str) if start_date_str else None
     last_seen_date = initial_value_date
 
     prev_cur: Optional[str] = None
+    seq = 0
 
-    totals_in: dict[str, float] = {}
-    totals_out: dict[str, float] = {}
-
-    seq = 0  # monotonic sequence to preserve statement order
-
-    for page_num, page in enumerate(pages):
+    for page in pages:
         page_currency = infer_page_currency(page, prev_cur)
         prev_cur = page_currency
+        current_currency = page_currency
 
-        if current_currency != page_currency:
-            running_balance_cents = None
-            current_currency = page_currency
-
-        lines = page.get("lines", [])
+        lines = page.get("lines", []) or []
         if not lines:
             continue
 
@@ -455,11 +475,9 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
         except ValueError:
             continue
 
-        # For description slicing
         amount_cols = [v for k, v in header_positions.items() if k in ("in", "out") and v is not None]
         first_amount_x = min(amount_cols) if amount_cols else None
 
-        # Iterate rows below header
         for line in lines[start_idx + 1: end_idx]:
             df = pd.DataFrame(line.get("words", []))
             if df.empty:
@@ -474,32 +492,20 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
                 axis=1
             )
 
-            # Require a date on the line
-            date_match = re.search(r"\b(\d{1,2}) (\w{3,9}) (\d{4})\b", df["line_text"].iloc[0])
-            if not date_match:
+            m = re.search(r"\b(\d{1,2}) (\w{3,9}) (\d{4})\b", df["line_text"].iloc[0])
+            if not m:
                 continue
-            parsed_date = parse_date(date_match.group(0))
-            if not parsed_date:
+            transaction_date = parse_date(m.group(0))
+            if not transaction_date:
                 continue
-            transaction_date = parsed_date
             last_seen_date = transaction_date
 
-            # Amounts by category
-            in_series = df[df["category"] == "in"]["amount"]
+            in_series  = df[df["category"] == "in"]["amount"]
             out_series = df[df["category"] == "out"]["amount"]
-            bal_series = df[df["category"] == "bal"]["amount"]
 
-            credit_amount = in_series.iloc[0] if not in_series.empty else None
-            debit_amount = out_series.iloc[0] if not out_series.empty else None
-            balance = bal_series.iloc[0] if not bal_series.empty else None
-
-            # --- NEW: normalize NaNs to None
-            credit_amount = _num_or_none(credit_amount)
-            debit_amount = _num_or_none(debit_amount)
-            balance = _num_or_none(balance)
-
-            # Must have date, balance, and either in or out
-            if balance is None or (credit_amount is None and debit_amount is None):
+            credit_amount = _num_or_none(in_series.iloc[0])  if not in_series.empty  else None
+            debit_amount  = _num_or_none(out_series.iloc[0]) if not out_series.empty else None
+            if credit_amount is None and debit_amount is None:
                 continue
 
             clean_desc = transaction_description(
@@ -509,53 +515,15 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
             )
 
             credit_amount = credit_amount or 0.0
-            debit_amount = debit_amount or 0.0
+            debit_amount  = debit_amount  or 0.0
 
-            # --- accumulate per-currency totals
-            totals_in[current_currency] = totals_in.get(current_currency, 0.0) + credit_amount
-            totals_out[current_currency] = totals_out.get(current_currency, 0.0) + debit_amount
-
-            credit_c = int(round(credit_amount * 100))
-            debit_c = int(round(debit_amount * 100))
-
-            if running_balance_cents is None:
-                # balance is guaranteed not None now
-                running_balance_cents = int(round(balance * 100))
-            else:
-                running_balance_cents += credit_c - debit_c
-
-            calculated_balance = round(running_balance_cents / 100.0, 2)
-
-            # if not math.isclose(calculated_balance, float(balance), abs_tol=0.01):
-            #     discrepancy = round(float(balance) - calculated_balance, 2)
-            #     print("\n⚠️ BALANCE DISCREPANCY DETECTED")
-            #     print(f"📄 Page: {page_num + 1} | 💱 Currency: {current_currency}")
-            #     print(f"📆 Date: {transaction_date}")
-            #     print(f"📝 Description: {clean_desc}")
-            #     print(f"💸 Credit: {credit_amount:.2f} | Debit: {debit_amount:.2f}")
-            #     print(f"📊 Calculated Balance: {calculated_balance:.2f}")
-            #     print(f"📄 Statement Balance:  {float(balance):.2f}")
-            #     print(f"🧮 Discrepancy: {discrepancy:+.2f}")
-            #     print(f"🔤 OCR Line: {df['line_text'].iloc[0]}")
-
-            amt_value = credit_amount if credit_amount > 0 else debit_amount
             all_transactions.append({
                 "seq": seq,
                 "transactions_date": transaction_date,
                 "transaction_type": "credit" if credit_amount > 0 else "debit",
                 "description": clean_desc,
-                "amount": {
-                    "value": amt_value,
-                    "currency": current_currency,
-                },
-                "balance_after_statement": {
-                    "value": float(balance),
-                    "currency": current_currency,
-                },
-                "balance_after_calculated": {
-                    "value": calculated_balance,
-                    "currency": current_currency,
-                },
+                "amount": {"value": credit_amount if credit_amount > 0 else debit_amount,
+                           "currency": current_currency},
             })
             seq += 1
 
@@ -591,7 +559,7 @@ def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unkno
 
     # 4) group and build per-currency sections
     buckets = group_transactions_by_currency(transactions)
-    currencies = build_currency_sections(buckets, summaries)
+    currencies = build_currency_sections_balances(buckets, summaries)
 
     # 5) global dates from transactions (language-agnostic)
     if transactions:

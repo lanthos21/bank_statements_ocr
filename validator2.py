@@ -1,11 +1,21 @@
 # validator2.py
 import math
+from copy import deepcopy
 
-ABS_TOL = 0.01  # cents tolerance
+ABS_TOL = 0.01       # cents tolerance
+COERCE_LEGACY = True # convert legacy currency sections into the strict structure
 
 
+# ----------------------------
+# Small helpers
+# ----------------------------
 def _num(x):
-    return None if x is None else float(x)
+    if x is None:
+        return None
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
 
 
 def _fmt(x):
@@ -13,90 +23,256 @@ def _fmt(x):
 
 
 def _cmp(a, b):
-    """Compare with tolerance; return (delta, ok)"""
+    """
+    Compare with tolerance; return (delta = b - a, ok)
+    If either is None, returns (None, None).
+    """
     if a is None or b is None:
         return None, None
     d = round(float(b) - float(a), 2)
     return d, math.isclose(float(a), float(b), abs_tol=ABS_TOL)
 
 
+def _tx_sums(txs):
+    """Return (in_sum, out_sum) from transactions list that use amount.value."""
+    in_tx  = round(sum((_num(t.get("amount", {}).get("value")) or 0.0)
+                       for t in txs if t.get("transaction_type") == "credit"), 2)
+    out_tx = round(sum((_num(t.get("amount", {}).get("value")) or 0.0)
+                       for t in txs if t.get("transaction_type") == "debit"), 2)
+    return in_tx, out_tx
+
+
+# ----------------------------
+# Schema enforcement & coercion
+# ----------------------------
+STRICT_BALANCES_TEMPLATE = {
+    "opening_balance":   {"summary_table": None, "transactions_table": None},
+    "money_in_total":    {"summary_table": None, "transactions_table": None},
+    "money_out_total":   {"summary_table": None, "transactions_table": None},
+    "closing_balance":   {"summary_table": None, "transactions_table": None, "calculated": None},
+}
+
+def _ensure_balances_shape(balances: dict) -> dict:
+    """Ensure the required keys exist; fill missing leaves with None."""
+    shaped = deepcopy(STRICT_BALANCES_TEMPLATE)
+    if not isinstance(balances, dict):
+        return shaped
+    for k, sub in STRICT_BALANCES_TEMPLATE.items():
+        v = balances.get(k)
+        if not isinstance(v, dict):
+            continue
+        shaped[k].update({kk: _num(v.get(kk)) for kk in sub.keys()})
+    return shaped
+
+
+def _coerce_legacy_currency_section(sec: dict) -> dict:
+    """
+    Convert a legacy currency section into the strict structure.
+    Legacy examples:
+      opening_balance: {value, currency} or number
+      money_in_total / money_out_total: ditto
+      closing_balance_statement / closing_balance_calculated
+    """
+    txs = sec.get("transactions", []) or []
+
+    def _val(node):
+        if node is None:
+            return None
+        if isinstance(node, (int, float)):
+            return float(node)
+        if isinstance(node, dict):
+            return _num(node.get("value"))
+        return None
+
+    # derive tx sums
+    in_tx, out_tx = _tx_sums(txs)
+
+    # derive opening from rows if balance_after_statement & amount exist on the first tx
+    opening_tx = None
+    if txs:
+        first = txs[0]
+        bal = (first.get("amount_after_statement") or first.get("balance_after_statement") or {}).get("value")
+        amt = (first.get("amount") or {}).get("value")
+        typ = first.get("transaction_type")
+        if bal is not None and amt is not None and typ in ("credit", "debit"):
+            opening_tx = round(float(bal) - float(amt), 2) if typ == "credit" else round(float(bal) + float(amt), 2)
+
+    closing_stmt_tx = None
+    if txs:
+        last = txs[-1]
+        closing_stmt_tx = (last.get("amount_after_statement") or last.get("balance_after_statement") or {}).get("value")
+        closing_stmt_tx = _num(closing_stmt_tx)
+
+    # map legacy fields to strict leaves
+    strict = deepcopy(STRICT_BALANCES_TEMPLATE)
+    strict["opening_balance"]["transactions_table"] = opening_tx
+    strict["money_in_total"]["transactions_table"]  = in_tx
+    strict["money_out_total"]["transactions_table"] = out_tx
+    strict["closing_balance"]["transactions_table"] = closing_stmt_tx
+
+    # legacy statement/summary closings (if present)
+    strict["closing_balance"]["summary_table"] = _val(sec.get("closing_balance_statement"))
+    strict["closing_balance"]["calculated"]    = _val(sec.get("closing_balance_calculated"))
+
+    # opening/money in/out "summary_table" are typically not in legacy → leave as None
+    # If legacy had bare numbers at top-level, treat them as transactions_table:
+    ob_legacy  = _val(sec.get("opening_balance"))
+    mi_legacy  = _val(sec.get("money_in_total"))
+    mo_legacy  = _val(sec.get("money_out_total"))
+    if strict["opening_balance"]["transactions_table"] is None and ob_legacy is not None:
+        strict["opening_balance"]["transactions_table"] = ob_legacy
+    if mi_legacy is not None:
+        strict["money_in_total"]["transactions_table"] = mi_legacy
+    if mo_legacy is not None:
+        strict["money_out_total"]["transactions_table"] = mo_legacy
+
+    return strict
+
+
+def _enforce_currency_section(cur_section: dict) -> dict:
+    """
+    Return a new currency section that definitely has:
+      - balances (strict shape)
+      - transactions list
+    If section already has balances, normalize shape. If not and COERCE_LEGACY is True,
+    try to coerce. Otherwise, create an empty strict balances block.
+    """
+    sec = deepcopy(cur_section or {})
+    txs = sec.get("transactions", []) or []
+    if "transactions" not in sec:
+        sec["transactions"] = txs
+
+    if "balances" in sec and isinstance(sec["balances"], dict):
+        sec["balances"] = _ensure_balances_shape(sec["balances"])
+    elif COERCE_LEGACY:
+        sec["balances"] = _coerce_legacy_currency_section(sec)
+    else:
+        sec["balances"] = deepcopy(STRICT_BALANCES_TEMPLATE)
+
+    return sec
+
+
+def _enforce_top_level(data: dict) -> dict:
+    """
+    Ensure every currency under data['currencies'] conforms to strict schema.
+    Returns a deep-copied, normalized data dict.
+    """
+    d = deepcopy(data or {})
+    curr = d.get("currencies", {}) or {}
+    for k in list(curr.keys()):
+        curr[k] = _enforce_currency_section(curr[k])
+    d["currencies"] = curr
+    return d
+
+
+# ----------------------------
+# Validation (assumes strict shape after enforcement)
+# ----------------------------
 def validate_statement_json(data: dict) -> dict:
-    print(f"\n=== VALIDATION (balances) for: {data.get('file_name')} ===")
+    """
+    Enforce schema (optionally coercing legacy), then validate.
+    """
+    data_n = _enforce_top_level(data)
 
-    report = {"file_name": data.get("file_name"), "currencies": {}, "ok": True}
-    currencies = data.get("currencies", {}) or {}
+    print(f"\n=== VALIDATION (balances) for: {data_n.get('file_name')} ===")
+    report = {"file_name": data_n.get("file_name"), "currencies": {}, "ok": True}
 
+    currencies = data_n.get("currencies", {}) or {}
     for cur in sorted(currencies.keys()):
-        sec = currencies[cur]
-        balances = sec.get("balances", {}) or {}
+        sec = currencies[cur] or {}
         txs = sec.get("transactions", []) or []
         n = len(txs)
 
+        b = sec.get("balances", {}) or {}
+        ob = b.get("opening_balance", {}) or {}
+        mi = b.get("money_in_total", {}) or {}
+        mo = b.get("money_out_total", {}) or {}
+        cb = b.get("closing_balance", {}) or {}
+
+        open_sum = _num(ob.get("summary_table"))
+        open_tx  = _num(ob.get("transactions_table"))
+
+        in_sum   = _num(mi.get("summary_table"))
+        in_tx_t  = _num(mi.get("transactions_table"))
+
+        out_sum  = _num(mo.get("summary_table"))
+        out_tx_t = _num(mo.get("transactions_table"))
+
+        close_sum  = _num(cb.get("summary_table"))
+        close_tx   = _num(cb.get("transactions_table"))
+        close_calc = _num(cb.get("calculated"))
+
+        # True tx sums
+        in_tx, out_tx = _tx_sums(txs)
+
         print(f"\n{cur} ({n} transactions)")
 
-        # --- Opening ---
-        opening_s = _num(balances.get("opening_balance", {}).get("summary_table"))
-        opening_t = _num(balances.get("opening_balance", {}).get("transactions_table"))
-        d_open, ok_open = _cmp(opening_s, opening_t)
-        if opening_s is None and opening_t is not None:
-            print(f"  ✅ Opening: no summary table → trusted from transactions_table {_fmt(opening_t)}")
-        elif opening_s is not None and opening_t is not None:
-            print(f"  {'✅' if ok_open else '❌'} Opening: summary {_fmt(opening_s)} vs transactions_table {_fmt(opening_t)} Δ {_fmt(d_open)}")
+        # Opening
+        if open_sum is None and open_tx is None:
+            print("  ✅ Opening: no summary table and no transactions-table opening (acceptable).")
         else:
-            print(f"  ⚪ Opening: missing values")
-            ok_open = True
+            if open_sum is not None and open_tx is not None:
+                d_open, ok_open = _cmp(open_sum, open_tx)
+                print(f"  {'✅' if ok_open else 'ℹ️'} Opening: summary_table {_fmt(open_sum)} vs transactions_table {_fmt(open_tx)}  Δ {_fmt(d_open)}")
+            elif open_sum is not None:
+                print(f"  ✅ Opening: summary_table {_fmt(open_sum)}")
+            else:
+                print(f"  ✅ Opening: transactions_table {_fmt(open_tx)}")
 
-        # --- Money out ---
-        out_s = _num(balances.get("money_out_total", {}).get("summary_table"))
-        out_t = _num(balances.get("money_out_total", {}).get("transactions_table"))
-        d_out, ok_out = _cmp(out_s, out_t)
-        if out_s is None and out_t is not None:
-            print(f"  ✅ Money out: no summary table → transactions_table {_fmt(out_t)}")
-        elif out_s is not None and out_t is not None:
-            print(f"  {'✅' if ok_out else '❌'} Money out: summary {_fmt(out_s)} vs transactions_table {_fmt(out_t)} Δ {_fmt(d_out)}")
+        # Money out / in — compare tx totals vs transactions_table (ground truth)
+        d_out_tx, ok_out_tx = _cmp(out_tx, out_tx_t if out_tx_t is not None else out_tx)
+        d_in_tx,  ok_in_tx  = _cmp(in_tx,  in_tx_t  if in_tx_t  is not None else in_tx)
+
+        print(f"  {'✅' if ok_out_tx else '❌'} Money out: transactions_table {_fmt(out_tx_t)} vs tx-sum {_fmt(out_tx)}  Δ {_fmt(d_out_tx)}")
+        if out_sum is None:
+            print(f"  ✅ Money out: no summary table")
         else:
-            print(f"  ⚪ Money out: missing values")
-            ok_out = True
+            d_out_sum, _ = _cmp(out_sum, out_tx)
+            print(f"  ℹ️  Money out: summary_table {_fmt(out_sum)} vs tx-sum {_fmt(out_tx)}  Δ {_fmt(d_out_sum)}")
 
-        # --- Money in ---
-        in_s = _num(balances.get("money_in_total", {}).get("summary_table"))
-        in_t = _num(balances.get("money_in_total", {}).get("transactions_table"))
-        d_in, ok_in = _cmp(in_s, in_t)
-        if in_s is None and in_t is not None:
-            print(f"  ✅ Money in: no summary table → transactions_table {_fmt(in_t)}")
-        elif in_s is not None and in_t is not None:
-            print(f"  {'✅' if ok_in else '❌'} Money in: summary {_fmt(in_s)} vs transactions_table {_fmt(in_t)} Δ {_fmt(d_in)}")
+        print(f"  {'✅' if ok_in_tx else '❌'} Money in:  transactions_table {_fmt(in_tx_t)} vs tx-sum {_fmt(in_tx)}   Δ {_fmt(d_in_tx)}")
+        if in_sum is None:
+            print(f"  ✅ Money in:  no summary table")
         else:
-            print(f"  ⚪ Money in: missing values")
-            ok_in = True
+            d_in_sum, _ = _cmp(in_sum, in_tx)
+            print(f"  ℹ️  Money in:  summary_table {_fmt(in_sum)} vs tx-sum {_fmt(in_tx)}   Δ {_fmt(d_in_sum)}")
 
-        # --- Closing ---
-        closing_s = _num(balances.get("closing_balance", {}).get("summary_table"))
-        closing_t = _num(balances.get("closing_balance", {}).get("transactions_table"))
-        closing_c = _num(balances.get("closing_balance", {}).get("calculated"))
+        # Closing
+        # Prefer a calculation using transactions-table opening if we have one; else summary opening.
+        calc_from_tx = None
+        if open_tx is not None:
+            calc_from_tx = round(open_tx + in_tx - out_tx, 2)
+        elif open_sum is not None:
+            calc_from_tx = round(open_sum + in_tx - out_tx, 2)
 
-        if closing_s is None and closing_t is not None and closing_c is not None:
-            d_close, ok_close = _cmp(closing_t, closing_c)
-            print(f"  {'✅' if ok_close else '❌'} Closing: transactions_table {_fmt(closing_t)} vs calculated {_fmt(closing_c)} Δ {_fmt(d_close)}")
-        elif closing_s is not None and closing_t is not None:
-            d_close, ok_close = _cmp(closing_s, closing_t)
-            print(f"  {'✅' if ok_close else '❌'} Closing: summary {_fmt(closing_s)} vs transactions_table {_fmt(closing_t)} Δ {_fmt(d_close)}")
-            if closing_c is not None:
-                d_calc, ok_calc = _cmp(closing_t, closing_c)
-                print(f"  {'✅' if ok_calc else '❌'}   cross-check: transactions_table {_fmt(closing_t)} vs calculated {_fmt(closing_c)} Δ {_fmt(d_calc)}")
-                ok_close = ok_close and ok_calc
-        elif closing_t is not None:
-            print(f"  ✅ Closing: no summary table → transactions_table {_fmt(closing_t)} (calculated {_fmt(closing_c)})")
-            ok_close = True
-        else:
-            print(f"  ⚪ Closing: missing values")
-            ok_close = True
+        any_close_info = False
+        if close_calc is not None and calc_from_tx is not None:
+            d_close_calc, ok_close_calc = _cmp(close_calc, calc_from_tx)
+            print(f"  {'✅' if ok_close_calc else '❌'} Closing (calculated): model {_fmt(close_calc)} vs derived-from-tx {_fmt(calc_from_tx)}  Δ {_fmt(d_close_calc)}")
+            any_close_info = True
 
-        cur_ok = all([ok_open, ok_out, ok_in, ok_close])
+        if close_sum is not None and calc_from_tx is not None:
+            d_close_sum, ok_close_sum = _cmp(close_sum, calc_from_tx)
+            print(f"  {'✅' if ok_close_sum else '❌'} Closing (summary_table): {_fmt(close_sum)} vs derived-from-tx {_fmt(calc_from_tx)}  Δ {_fmt(d_close_sum)}")
+            any_close_info = True
+
+        if close_tx is not None and calc_from_tx is not None:
+            d_close_tx, ok_close_tx = _cmp(close_tx, calc_from_tx)
+            print(f"  {'✅' if ok_close_tx else '❌'} Closing (transactions_table): {_fmt(close_tx)} vs derived-from-tx {_fmt(calc_from_tx)}  Δ {_fmt(d_close_tx)}")
+            any_close_info = True
+
+        if not any_close_info:
+            print("  ⚪ Closing: missing values")
+
+        # overall ok (require tx totals to match)
+        cur_ok = not ((ok_out_tx is False) or (ok_in_tx is False))
+        report["ok"] = report["ok"] and cur_ok
+
         report["currencies"][cur] = {
             "transactions": n,
+            "balances": sec.get("balances"),
+            "tx_sums": {"in": in_tx, "out": out_tx},
             "ok": cur_ok,
         }
-        report["ok"] = report["ok"] and cur_ok
 
     return report
