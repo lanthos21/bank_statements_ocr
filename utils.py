@@ -78,3 +78,18 @@ def parse_date(date_str: str) -> str | None:
         return datetime(int(year), month_num, int(day)).strftime("%Y-%m-%d")
     except ValueError:
         return None
+
+from datetime import datetime
+
+def date_variants(iso_date: str) -> list[str]:
+    """Return possible printed formats for an ISO date (YYYY-MM-DD)."""
+    try:
+        d = datetime.strptime(iso_date, "%Y-%m-%d")
+    except Exception:
+        return []
+    return [
+        d.strftime("%d %b %Y"),   # 10 May 2024
+        d.strftime("%d %B %Y"),   # 10 May 2024 (long month)
+        d.strftime("%d/%m/%Y"),   # 10/05/2024
+        d.strftime("%d-%m-%Y"),   # 10-05-2024
+    ]

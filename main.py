@@ -9,16 +9,10 @@ from validator import validate_statement_json
 
 def main():
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut gbp.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut spanish.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut euro with pockets.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\downloadStatement v2.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 march.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib 26th april 2024-1723.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency2.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #2587 april.pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\Copy of aib ca #8056 04.06.24 - 13.01.25-7861.pdf"
 
     bank_code, conf, method = detect_bank_provider(pdf_path)
     if not bank_code:
