@@ -9,10 +9,10 @@ from validator2 import validate_statement_json
 
 def main():
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut gbp.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\downloadStatement v2.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #2587 april.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\marlon aib #061 from  3 may to 9 jan-5933.pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf"
 
     bank_code, conf, method = detect_bank_provider(pdf_path)
     if not bank_code:

@@ -1,337 +1,441 @@
-# boi_current.py
+# boi.py
+# Bank of Ireland parser → AIB-style output (balances + transactions)
+#
+# - headers: "Date | Transaction details | Payments - out | Payments - in | Balance"
+# - robust header detection (hyphen/en-dash/emdash; merged/split tokens)
+# - opening balance: first "BALANCE FORWARD" row's Balance value
+# - closing balance: last number near Balance column
+# - descriptions: tokens from the Details column window only
+# - output:
+#   currencies: {
+#     <CUR>: {
+#       balances: {
+#         opening_balance: { summary_table: None, transactions_table: <float|None> },
+#         money_in_total:  { summary_table: None, transactions_table: <float> },
+#         money_out_total: { summary_table: None, transactions_table: <float> },
+#         closing_balance: { summary_table: None, transactions_table: <float|None>, calculated: <float|None> }
+#       },
+#       transactions: [ { seq, transactions_date, transaction_type, description, amount } ... ]
+#     }
+#   }
+
+from __future__ import annotations
 
 import re
-from collections import defaultdict
-from typing import Optional, Dict, List, Tuple, Any
+from typing import Optional, Dict, List, Any
 
 import pandas as pd
 
 from utils import parse_currency, parse_date
 
+# ---------- Regex helpers ----------
+RE_BAL_FWD = re.compile(r"\bBALANCE\s*FORWARD\b", re.IGNORECASE)
+RE_DATE_LONG = re.compile(r"\b(\d{1,2})\s+[A-Za-z]{3,9}\s+\d{4}\b")
+MONEY_RE = re.compile(r"^\d{1,3}(?:,\d{3})*\.\d{2}$|^\d+\.\d{2}$")
 
-# ----------------------------
-# Header / column detection (BOI)
-# ----------------------------
+DASH_CHARS = "-–—"  # hyphen / en dash / em dash
 
-def detect_column_positions(lines: list[dict]) -> tuple[dict, int, int] | None:
-    """
-    Locate BOI headers like 'Payments - in', 'Payments - out', 'Balance'.
-    Returns (header_positions, header_start_idx, len(lines)) or None if not found.
-
-    NOTE: BOI amounts are typically RIGHT-JUSTIFIED; we store right edges for
-    in/out/bal columns.
-    """
-    header_positions = {}
-    header_start_idx = None
-
-    def find_phrase_x_right(line, phrase: str) -> int | None:
-        words = line.get("words", [])
-        parts = phrase.lower().split()
-        for i in range(len(words) - len(parts) + 1):
-            if all(parts[j] in (words[i + j].get("text", "").lower()) for j in range(len(parts))):
-                w_last = words[i + len(parts) - 1]
-                left = int(w_last.get("left", 0))
-                width = int(w_last.get("width", 0))
-                return left + width  # RIGHT edge
+def _find_date_in_text(s: str) -> Optional[str]:
+    if not s:
         return None
+    m = RE_DATE_LONG.search(s)
+    if m:
+        return parse_date(m.group(0))
+    return None
 
-    for idx, line in enumerate(lines):
-        if not line.get("words"):
+# ---------- Column detection ----------
+def detect_column_positions(lines: list[dict], debug: bool = False) -> tuple[dict, int, int] | None:
+    """
+    Detect BOI headers and return:
+      positions = {
+        'date_left': int,
+        'details_left': int,
+        'out_right': int,
+        'in_right': int,
+        'bal_right': int,
+      }, header_start_idx, len(lines)
+    """
+    def right_edge(w: dict) -> int:
+        return int(w.get("left", 0)) + int(w.get("width", 0))
+
+    def dbg(*a):
+        if debug:
+            print(*a)
+
+    for idx, line in enumerate(lines or []):
+        words = line.get("words", []) or []
+        if not words:
             continue
 
-        right_out = find_phrase_x_right(line, "Payments - out")
-        right_in  = find_phrase_x_right(line, "Payments - in")
-        right_bal = None
-        for w in line.get("words", []):
-            t = (w.get("text") or "").lower()
-            if "balance" in t:
-                right_bal = int(w.get("left", 0)) + int(w.get("width", 0))
+        # Prepare normalized token list
+        toks = [(i, (w.get("text") or "").strip(), int(w.get("left", 0)), right_edge(w)) for i, w in enumerate(words)]
+        toks_lower = [(i, t.lower(), l, r) for (i, t, l, r) in toks if t]
+
+        pos = {
+            "date_left": None,
+            "details_left": None,
+            "out_right": None,
+            "in_right": None,
+            "bal_right": None,
+        }
+
+        # Find "Date"
+        for i, t, l, r in toks_lower:
+            if t == "date":
+                pos["date_left"] = int(l)
                 break
 
-        if right_out and right_in and right_bal:
-            header_positions = {"out": right_out, "in": right_in, "bal": right_bal}
-            header_start_idx = idx
-            break
+        # Find "Transaction details" (may come as "Transaction" then "details")
+        for i, t, l, r in toks_lower:
+            if t.startswith("transaction"):
+                # if next token is "details" use this left as the column left
+                if i + 1 < len(words):
+                    nxt = (words[i + 1].get("text") or "").strip().lower()
+                    if "detail" in nxt:
+                        pos["details_left"] = int(l)
+                        break
+                # sometimes it is a single merged token
+                if "detail" in t:
+                    pos["details_left"] = int(l)
+                    break
 
-    if header_start_idx is None:
-        return None
+        # Find Payments - out / in (robust to dash variants and merged tokens)
+        def find_payments(label: str) -> Optional[int]:
+            """
+            label in {"out","in"}; returns RIGHT edge of the label token (or the last token
+            in the header span) for the respective Payments column.
+            """
+            for i, t, l, r in toks_lower:
+                if not t.startswith("payments"):
+                    continue
+                # Look ahead up to 4 tokens for dash + label (or merged)
+                span_right = r
+                found = False
+                j = i + 1
+                steps = 0
+                while j < len(words) and steps < 5:
+                    tj = (words[j].get("text") or "").strip().lower()
+                    span_right = right_edge(words[j])
+                    if (tj in label) or (tj == label):
+                        found = True
+                        break
+                    # tolerate dash tokens and merged forms
+                    if (tj and any(ch in tj for ch in DASH_CHARS)) or (("payments" + label) in t.replace(" ", "")) or (label in tj):
+                        # if the very next meaningful token contains label, accept
+                        if label in tj:
+                            found = True
+                            break
+                    j += 1
+                    steps += 1
+                if found:
+                    return int(span_right)
+            return None
 
-    return header_positions, header_start_idx, len(lines)
+        pos["out_right"] = find_payments("out")
+        pos["in_right"]  = find_payments("in")
+
+        # Find "Balance"
+        for i, t, l, r in toks_lower:
+            if "balance" in t:
+                pos["bal_right"] = int(r)
+                break
+
+        if all(pos[k] is not None for k in ("date_left", "details_left", "out_right", "in_right", "bal_right")):
+            dbg(f"🔎 BOI header detected at line {idx}: {pos}")
+            return pos, idx, len(lines)
+
+    return None
 
 
-def categorise_amount_by_right_edge(x_right: int, header_positions: dict, margin: int = 80) -> str:
+def categorise_amount_by_right_edge(x_right: int, header_positions: dict, margin: int = 140) -> str:
     """
-    Classify token into 'out' | 'in' | 'bal' by proximity to the column RIGHT edges.
+    Classify token into 'out' | 'in' | 'bal' by proximity to column RIGHT edges.
     """
     x_right = int(x_right)
     best = ("unknown", margin + 1)
-    for k in ("out", "in", "bal"):
+    for k, label in (("out_right", "out"), ("in_right", "in"), ("bal_right", "bal")):
         pos = header_positions.get(k)
         if pos is None:
             continue
         d = abs(x_right - int(pos))
         if d < best[1]:
-            best = (k, d)
+            best = (label, d)
     return best[0] if best[1] <= margin else "unknown"
 
+# ---------- Geometry helpers ----------
+def _right_edge(w: dict) -> int:
+    return int(w.get("left", 0)) + int(w.get("width", 0))
 
-# ----------------------------
-# Optional helpers (BOI)
-# ----------------------------
-
-def extract_iban(pages: list[dict]) -> str | None:
-    iban_pattern = re.compile(r'\b([A-Z]{2}\d{2}[A-Z0-9]{11,30})\b')
-    for page in pages:
-        for line in page.get("lines", []):
-            txt = line.get("line_text", "")
-            if "IBAN" in txt.upper():
-                after = txt.upper().split("IBAN", 1)[-1]
-                cleaned = re.sub(r"\s+", "", after)
-                m = iban_pattern.search(cleaned)
-                if m:
-                    return m.group(1)
-    return None
-
-
-def extract_opening_balance_and_start_date(pages: list[dict]) -> tuple[float | None, str | None]:
+def _details_window_words(words: list[dict], details_left: int, amount_cols_right: List[int]) -> List[str]:
     """
-    If a 'Balance forward' line exists, use its Balance value and date as the opening & start.
-    Falls back to (None, None) silently.
+    Return token texts within the Details column by geometry:
+    left >= details_left - pad  AND  right <= desc_right_limit,
+    where desc_right_limit is slightly left of the first amount column.
     """
-    for page in pages:
-        header_result = detect_column_positions(page.get("lines", []))
-        if not header_result:
+    PAD_LEFT = 6
+    GAP_RIGHT = 30  # buffer before the first amount column
+    desc_right_limit = min(amount_cols_right) - GAP_RIGHT
+
+    out = []
+    for w in words or []:
+        txt = (w.get("text") or "").strip()
+        if not txt:
             continue
-        header_positions, _, _ = header_result
+        l = int(w.get("left", 0))
+        r = _right_edge(w)
+        if (l >= details_left - PAD_LEFT) and (r <= desc_right_limit):
+            out.append(txt)
+    return out
 
-        for line in page.get("lines", []):
-            if "balance forward" in (line.get("line_text", "").lower()):
-                df = pd.DataFrame(line.get("words", []))
-                if df.empty:
-                    continue
-                df["right"] = df["left"] + df["width"]
-                df["amount"] = df["text"].apply(lambda v: parse_currency(v, strip_currency=False))
-                df["category"] = df["right"].apply(lambda x: categorise_amount_by_right_edge(x, header_positions))
-                bal_series = df[df["category"] == "bal"]["amount"]
-                balance = round(bal_series.iloc[0], 2) if not bal_series.empty else None
+# ---------- Opening & Closing ----------
+def extract_opening_balance_and_start_date(pages: list[dict], debug: bool = False) -> tuple[float | None, str | None]:
+    """
+    Opening = balance value of the FIRST 'BALANCE FORWARD' line (nearest the Balance column).
+    Start date = date on that same line (if present).
+    """
+    def dbg(*a):
+        if debug:
+            print(*a)
 
-                date_match = re.search(r"\b(\d{1,2}) (\w{3,9}) (\d{4})\b", line.get("line_text", ""))
-                start_date = parse_date(date_match.group(0)) if date_match else None
-                return balance, start_date
+    for page_idx, page in enumerate(pages or []):
+        det = detect_column_positions(page.get("lines", []) or [], debug=debug)
+        bal_r = None
+        if det:
+            bal_r = int(det[0]["bal_right"])
+
+        for line_idx, line in enumerate(page.get("lines", []) or []):
+            lt = (line.get("line_text") or "")
+            if not RE_BAL_FWD.search(lt):
+                continue
+
+            df = pd.DataFrame(line.get("words", []) or [])
+            if df.empty:
+                continue
+            df["right"] = df["left"] + df["width"]
+            df["amount_val"] = df["text"].apply(lambda v: parse_currency(v, strip_currency=False))
+            df_num = df[df["amount_val"].notna()].copy()
+            if df_num.empty:
+                continue
+
+            if bal_r is not None:
+                df_num["dist"] = (df_num["right"] - bal_r).abs()
+                chosen = df_num.sort_values(["dist", "right"]).iloc[0]
+                opening = float(chosen["amount_val"])
+                dbg(f"📘 Opening from page {page_idx} line {line_idx}: {opening} (by Balance col)")
+            else:
+                # fallback: take rightmost numeric on the line
+                chosen = df_num.sort_values("right").iloc[-1]
+                opening = float(chosen["amount_val"])
+                dbg(f"📘 Opening from page {page_idx} line {line_idx}: {opening} (fallback rightmost)")
+
+            start = _find_date_in_text(lt)
+            return opening, start
+
     return None, None
 
-
-# ----------------------------
-# Transactions (BOI)
-# ----------------------------
-
-def parse_transactions(
-    pages: list[dict],
-    iban: str | None = None
-) -> list[dict]:
+def extract_closing_balance(pages: list[dict], debug: bool = False) -> Optional[float]:
     """
-    Parse all BOI transaction rows across pages. Returns a flat list of transactions.
-    Each row includes balance if present. We keep statement order via a 'seq' field.
+    Closing balance = the last token in the Balance column that looks like a real money amount.
+    We:
+      - restrict to lines after a detected header on each page,
+      - classify tokens via right-edge proximity (so we're inside the Balance column),
+      - and require a 2-decimal money shape (rejects stray integers like '4').
     """
-    all_transactions: List[dict] = []
-    current_currency = "GBP" if iban and iban.upper().startswith("GB") else "EUR"
-    seq = 0
+    def dbg(*a):
+        if debug:
+            print(*a)
 
-    for page_num, page in enumerate(pages):
-        lines = page.get("lines", []) or []
-        header = detect_column_positions(lines)
-        if not header:
+    best = None
+
+    for pidx, page in enumerate(pages or []):
+        det = detect_column_positions(page.get("lines", []) or [], debug=debug)
+        if not det:
             continue
+        pos, start_idx, end_idx = det
+        bal_r = int(pos["bal_right"])
 
-        header_positions, start_idx, end_idx = header
-
-        # keep the last date seen on this page/section
-        last_seen_date: Optional[str] = None
-
-        for line in lines[start_idx + 1 : end_idx]:
+        for line in (page.get("lines", []) or [])[start_idx + 1 : end_idx]:
             words = line.get("words", []) or []
             if not words:
+                continue
+
+            # Build a small frame: token text, right edge, parsed value
+            df = pd.DataFrame(words)
+            if df.empty:
+                continue
+            df["right"] = df["left"] + df["width"]
+            df["text_norm"] = df["text"].astype(str).str.strip()
+            # classify by column right-edges
+            df["category"] = df["right"].apply(lambda xr: categorise_amount_by_right_edge(int(xr), pos, margin=140))
+
+            # candidates: Balance column AND money-like with 2 decimals
+            cand = df[(df["category"] == "bal") & (df["text_norm"].str.match(MONEY_RE))]
+            if cand.empty:
+                continue
+
+            # pick the rightmost candidate on the line (visual end of the column)
+            tok = cand.iloc[cand["right"].argmax()]
+            v = parse_currency(tok["text_norm"], strip_currency=False)
+            if v is None:
+                continue
+
+            best = float(v)  # last wins across the statement
+
+            if debug:
+                dbg(f"🧾 Closing cand p{pidx}: '{tok['text_norm']}' → {best:.2f}  (xr={int(tok['right'])}, bal_r={bal_r})")
+
+    return best
+
+# ---------- Transactions ----------
+def parse_transactions(pages: list[dict], debug: bool = False) -> list[dict]:
+    all_transactions: List[dict] = []
+    seq = 0
+
+    for pidx, page in enumerate(pages or []):
+        lines = page.get("lines", []) or []
+        det = detect_column_positions(lines, debug=debug)
+        if not det:
+            continue
+        pos, start_idx, end_idx = det
+        last_seen_date: Optional[str] = None
+
+        for lidx, line in enumerate(lines[start_idx + 1 : end_idx]):
+            words = line.get("words", []) or []
+            if not words:
+                continue
+
+            ltxt = line.get("line_text", "") or ""
+            d = _find_date_in_text(ltxt)
+            if d:
+                last_seen_date = d
+            if last_seen_date is None:
+                continue
+
+            # Skip the opening row itself
+            if RE_BAL_FWD.search(ltxt):
                 continue
 
             df = pd.DataFrame(words)
             if df.empty:
                 continue
-
             df["right"] = df["left"] + df["width"]
-            df["line_text"] = line.get("line_text", "")
+            df["amount_val"] = df["text"].apply(lambda v: parse_currency(v, strip_currency=False))
+            df["category"] = df["right"].apply(lambda xr: categorise_amount_by_right_edge(int(xr), pos))
 
-            # Only consider tokens that look somewhat numeric to speed things
-            # (still apply parse_currency for robustness)
-            df["amount"] = df["text"].apply(lambda v: parse_currency(v, strip_currency=False))
-            df["category"] = df["right"].apply(lambda x: categorise_amount_by_right_edge(x, header_positions))
+            out_series = df[(df["amount_val"].notna()) & (df["category"] == "out")]["amount_val"]
+            in_series  = df[(df["amount_val"].notna()) & (df["category"] == "in")]["amount_val"]
 
-            # --- NEW: carry-forward date ---
-            m = re.search(r"\b(\d{1,2}) (\w{3,9}) (\d{4})\b", df["line_text"].iloc[0])
-            if m:
-                parsed = parse_date(m.group(0))
-                if parsed:
-                    last_seen_date = parsed
-            transaction_date = last_seen_date
-            if transaction_date is None:
-                # we still haven't encountered a date yet; skip until we do
-                continue
-            # --- end NEW ---
-
-            in_series  = df[df["category"] == "in"]["amount"]
-            out_series = df[df["category"] == "out"]["amount"]
-            bal_series = df[df["category"] == "bal"]["amount"]
-
-            credit = float(in_series.iloc[0])  if not in_series.empty  and pd.notna(in_series.iloc[0])  else 0.0
-            debit  = float(out_series.iloc[0]) if not out_series.empty and pd.notna(out_series.iloc[0]) else 0.0
-
-            if credit == 0.0 and debit == 0.0:
-                # Skip non-transaction rows (e.g., just a balance)
+            debit  = float(out_series.iloc[-1]) if not out_series.empty else 0.0
+            credit = float(in_series .iloc[-1]) if not in_series .empty else 0.0
+            if debit == 0.0 and credit == 0.0:
                 continue
 
-            stmt_balance = float(bal_series.iloc[0]) if not bal_series.empty and pd.notna(bal_series.iloc[0]) else None
-
-            # description: drop the date only if present
-            clean_desc = df["line_text"].iloc[0]
-            if m:
-                clean_desc = clean_desc.replace(m.group(0), "").strip()
+            # Description from Details window
+            details_tokens = _details_window_words(
+                words,
+                details_left=int(pos["details_left"]),
+                amount_cols_right=[int(pos["out_right"]), int(pos["in_right"]), int(pos["bal_right"])],
+            )
+            clean_desc = " ".join(details_tokens).strip()
 
             all_transactions.append({
                 "seq": seq,
-                "transactions_date": transaction_date,
+                "transactions_date": last_seen_date,
                 "transaction_type": "credit" if credit > 0 else "debit",
                 "description": clean_desc,
-                "amount": {
-                    "value": credit if credit > 0 else debit,
-                    "currency": current_currency,
-                },
-                "balance_after_statement": None if stmt_balance is None else {
-                    "value": stmt_balance,
-                    "currency": current_currency,
-                },
-                # BOI: we won’t maintain a running calc here (can be misleading with pockets etc.)
-                "balance_after_calculated": None,
+                "amount": credit if credit > 0 else debit,
             })
             seq += 1
 
     return all_transactions
 
-
-# ----------------------------
-# Build multi-currency section (BOI)
-# ----------------------------
-
-def _group_by_currency(transactions: List[dict]) -> Dict[str, List[dict]]:
-    buckets: Dict[str, List[dict]] = defaultdict(list)
-    for t in transactions:
-        cur = t.get("amount", {}).get("currency")
-        if cur:
-            buckets[cur].append(t)
-    for cur in buckets:
-        buckets[cur].sort(key=lambda t: t.get("seq", 0))  # preserve statement order
-    return buckets
-
-
-def _derive_open_close_from_rows(txs: List[dict]) -> tuple[float | None, float | None]:
+# ---------- IBAN & currency ----------
+def extract_iban(pages: list[dict]) -> str | None:
     """
-    Opening from rows: reverse the first transaction against its statement balance (if present).
-    Closing from rows: last statement balance (if present).
+    Very permissive IBAN pull (used only to pick currency).
     """
-    if not txs:
-        return None, None
+    iban_pat = re.compile(r"\b([A-Z]{2}\d{2}[A-Z0-9]{11,30})\b")
+    for page in pages or []:
+        for line in page.get("lines", []) or []:
+            txt = (line.get("line_text") or "").upper()
+            if "IBAN" in txt:
+                cleaned = re.sub(r"\s+", "", txt.split("IBAN", 1)[-1])
+                m = iban_pat.search(cleaned)
+                if m:
+                    return m.group(1)
+    return None
 
-    first = txs[0]
-    last  = txs[-1]
+def _bucket_currency(transactions: List[dict], iban: str | None) -> Dict[str, List[dict]]:
+    cur = "GBP" if (iban and iban.upper().startswith("GB")) else "EUR"
+    return {cur: sorted(transactions, key=lambda t: t.get("seq", 0))}
 
-    first_bal = (first.get("balance_after_statement") or {}).get("value")
-    first_amt = first.get("amount", {}).get("value")
-    first_typ = first.get("transaction_type")
-
-    opening = None
-    if first_bal is not None and first_amt is not None and first_typ in ("credit", "debit"):
-        if first_typ == "credit":
-            opening = round(float(first_bal) - float(first_amt), 2)
-        else:
-            opening = round(float(first_bal) + float(first_amt), 2)
-
-    closing_stmt = (last.get("balance_after_statement") or {}).get("value")
-    closing_stmt = None if closing_stmt is None else float(closing_stmt)
-
-    return opening, closing_stmt
-
-
-def _build_currency_sections_from_rows(buckets: Dict[str, List[dict]]) -> Dict[str, Any]:
+# ---------- Assemble balances structure ----------
+def _build_balances(buckets: Dict[str, List[dict]], opening: float | None, closing_stmt: float | None) -> Dict[str, Any]:
     out: Dict[str, Any] = {}
-
-    for cur in sorted(buckets.keys()):
-        txs = buckets[cur]
-
-        money_in  = round(sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "credit"), 2)
-        money_out = round(sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "debit"), 2)
-
-        opening_from_rows, closing_stmt_from_rows = _derive_open_close_from_rows(txs)
-
-        # Calculate a closing from rows if we have opening
-        closing_calc = None
-        if opening_from_rows is not None:
-            closing_calc = round(float(opening_from_rows) + money_in - money_out, 2)
+    for cur, txs in buckets.items():
+        money_in  = round(sum(float(t["amount"]) for t in txs if t.get("transaction_type") == "credit"), 2)
+        money_out = round(sum(float(t["amount"]) for t in txs if t.get("transaction_type") == "debit"), 2)
+        closing_calc = round(opening + money_in - money_out, 2) if opening is not None else None
 
         out[cur] = {
-            "opening_balance": None if opening_from_rows is None else {"value": opening_from_rows, "currency": cur},
-            "money_in_total":  {"value": money_in,  "currency": cur},
-            "money_out_total": {"value": money_out, "currency": cur},
-            "closing_balance_statement": None if closing_stmt_from_rows is None else {"value": closing_stmt_from_rows, "currency": cur},
-            "closing_balance_calculated": None if closing_calc is None else {"value": closing_calc, "currency": cur},
+            "balances": {
+                "opening_balance": {
+                    "summary_table": None,
+                    "transactions_table": opening,
+                },
+                "money_in_total": {
+                    "summary_table": None,
+                    "transactions_table": money_in,
+                },
+                "money_out_total": {
+                    "summary_table": None,
+                    "transactions_table": money_out,
+                },
+                "closing_balance": {
+                    "summary_table": None,
+                    "transactions_table": closing_stmt,
+                    "calculated": closing_calc,
+                },
+            },
             "transactions": txs,
         }
-
     return out
 
-
-# ----------------------------
-# Public entrypoint (BOI)
-# ----------------------------
-
-def parse_statement(raw_ocr, client="Unknown", account_type="Unknown"):
-    """
-    Parse a BOI statement into the same multi-currency structure used by Revolut.
-    BOI usually has a single currency and no summary table, so we derive opening/closing
-    from the transaction rows themselves (or 'Balance forward' if present).
-    """
+# ---------- Public entrypoint ----------
+def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bool = True):
     pages = raw_ocr.get("pages", []) or []
 
-    # IBAN & currency guess
-    full_text = "\n".join("\n".join(line.get("line_text", "") for line in page.get("lines", [])) for page in pages)
     iban = extract_iban(pages)
-    currency_hint = "GBP" if iban and iban.upper().startswith("GB") else "EUR"
 
-    # Transactions (flat)
-    transactions = parse_transactions(pages, iban=iban)
+    # Transactions
+    transactions = parse_transactions(pages, debug=debug)
 
-    # Group by currency (likely just one)
-    buckets = _group_by_currency(transactions)
+    # Opening/closing
+    opening_val, start_date_open = extract_opening_balance_and_start_date(pages, debug=debug)
+    closing_val = extract_closing_balance(pages, debug=debug)
 
-    # Build per-currency sections purely from rows (no “Total a b c d” on BOI)
-    currencies = _build_currency_sections_from_rows(buckets)
+    # Currency bucket
+    buckets = _bucket_currency(transactions, iban)
+    currencies = _build_balances(buckets, opening=opening_val, closing_stmt=closing_val)
 
-    # Statement dates from transactions
+    # Statement date span
     if transactions:
         all_dates = [t.get("transactions_date") for t in transactions if t.get("transactions_date")]
-        start_date = min(all_dates) if all_dates else None
+        start_date = start_date_open or (min(all_dates) if all_dates else None)
         end_date   = max(all_dates) if all_dates else None
     else:
-        # Try a fallback start date from a 'Balance forward' line if we can
-        _, start_date = extract_opening_balance_and_start_date(pages)
+        start_date = start_date_open
         end_date = None
 
     return {
         "client": client,
         "file_name": raw_ocr.get("file_name"),
-        "account_holder": None,                 # add if you later parse it
+        "account_holder": None,
         "institution": "Bank of Ireland",
         "account_type": account_type,
         "iban": iban,
-        "bic": None,                            # add if you later parse it
+        "bic": None,
         "statement_start_date": start_date,
         "statement_end_date": end_date,
-        "currencies": currencies,               # ← aligned with Revolut structure
+        "currencies": currencies,
     }
