@@ -13,6 +13,7 @@ def main():
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut spanish.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\david n26 statements.pdf"
     pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #2587 april.pdf"
+    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #4018 11.01.24 - 23.09.24.pdf"
 
     bank_code, conf, method = detect_bank_provider(pdf_path)
     if not bank_code:

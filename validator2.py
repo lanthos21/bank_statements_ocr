@@ -33,13 +33,21 @@ def _cmp(a, b):
     return d, math.isclose(float(a), float(b), abs_tol=ABS_TOL)
 
 
+def _tx_amount(t):
+    """Return transaction amount as float, whether 'amount' is a float or {'value': ...}."""
+    a = t.get("amount")
+    if isinstance(a, (int, float)):
+        return _num(a)
+    if isinstance(a, dict):
+        return _num(a.get("value"))
+    return None
+
 def _tx_sums(txs):
-    """Return (in_sum, out_sum) from transactions list that use amount.value."""
-    in_tx  = round(sum((_num(t.get("amount", {}).get("value")) or 0.0)
-                       for t in txs if t.get("transaction_type") == "credit"), 2)
-    out_tx = round(sum((_num(t.get("amount", {}).get("value")) or 0.0)
-                       for t in txs if t.get("transaction_type") == "debit"), 2)
+    """Return (in_sum, out_sum) from transactions list (amount may be float or dict)."""
+    in_tx  = round(sum((_tx_amount(t) or 0.0) for t in txs if t.get("transaction_type") == "credit"), 2)
+    out_tx = round(sum((_tx_amount(t) or 0.0) for t in txs if t.get("transaction_type") == "debit"),  2)
     return in_tx, out_tx
+
 
 
 # ----------------------------
@@ -92,10 +100,16 @@ def _coerce_legacy_currency_section(sec: dict) -> dict:
     if txs:
         first = txs[0]
         bal = (first.get("amount_after_statement") or first.get("balance_after_statement") or {}).get("value")
-        amt = (first.get("amount") or {}).get("value")
+        # amount can be a float OR {'value': ...}
+        amt_node = first.get("amount")
+        if isinstance(amt_node, dict):
+            amt = _num(amt_node.get("value"))
+        else:
+            amt = _num(amt_node)
         typ = first.get("transaction_type")
         if bal is not None and amt is not None and typ in ("credit", "debit"):
             opening_tx = round(float(bal) - float(amt), 2) if typ == "credit" else round(float(bal) + float(amt), 2)
+
 
     closing_stmt_tx = None
     if txs:

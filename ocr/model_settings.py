@@ -67,7 +67,7 @@ PTSB_SETTINGS = OcrProfile(
         # deskew=True,                         # if you’ve got deskew support
     ),
     # PSM 3 = full automatic page segmentation (good for mixed table + text)
-    tesseract=TesseractSettings(oem=3, psm=3, lang="eng",
+    tesseract=TesseractSettings(oem=1, psm=6, lang="eng",
         extra="-c preserve_interword_spaces=1"),  # helps keep tokens separated
 )
 
