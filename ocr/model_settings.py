@@ -72,6 +72,15 @@ PTSB_SETTINGS = OcrProfile(
     tesseract=TesseractSettings(oem=1, psm=6, lang="eng",
         extra="-c preserve_interword_spaces=1"),  # helps keep tokens separated
 )
+from types import SimpleNamespace
+PTSB_SETTINGS.band_rescue = SimpleNamespace(
+    enabled=True,
+    gap_multiplier=1.25,         # > ~1.25× median line height
+    include_tail_gap=True,       # also scan bottom-of-page after last line
+    max_rescues_per_page=12,
+    require_digit=True,
+    filter_regex=r"\b\d{1,2}[A-Za-z]{3}\d{2,4}\b"  # date-like token, profile-specific
+)
 
 
 REVOLUT_SETTINGS = OcrProfile(

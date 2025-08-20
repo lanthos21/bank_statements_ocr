@@ -315,6 +315,46 @@ def _amount_with_numeric_fallback(
     return float(val_roi) if val_roi is not None else val_win
 
 
+def _cents_join_from_window_tokens(
+    words: list[dict],
+    window: tuple[float, float],
+    pad: int = 10,
+) -> Optional[float]:
+    """
+    If the balance cell is rendered as '2770 34' (euros + cents as separate tokens),
+    join all digits and divide by 100. Only applies when there is no ',' or '.' in the window
+    and the rightmost digit run has exactly 2 digits (cents).
+    """
+    c0, c1 = float(window[0]) - pad, float(window[1]) + pad
+    tokens: list[str] = []
+    digit_runs: list[str] = []
+
+    for w in (words or []):
+        t = (w.get("text") or "")
+        if not t:
+            continue
+        cx = int(w.get("left", 0)) + 0.5 * int(w.get("width", 0))
+        if not (c0 <= cx <= c1):
+            continue
+        tokens.append(t)
+        digits = re.sub(r"[^\d]", "", t)
+        if digits:
+            digit_runs.append(digits)
+
+    if not tokens or not digit_runs:
+        return None
+
+    win_str = "".join(tokens)
+    if "." in win_str or "," in win_str:
+        return None  # not a space-cents case
+
+    # need at least two digit runs, and the last run should be 2 digits (the cents)
+    if len(digit_runs) >= 2 and len(digit_runs[-1]) == 2:
+        all_digits = "".join(digit_runs)
+        if re.fullmatch(r"\d{3,}", all_digits):
+            return float(int(all_digits) / 100.0)
+
+    return None
 
 # ---------------------------------
 # Build a DataFrame of all words
@@ -607,36 +647,50 @@ def extract_opening_closing_ptsb(
 
             # --- OPENING ---
             if RE_BAL_FROM_LAST.search(ltxt) and opening_value is None:
-                # first pass in balance window
-                _, val_win = _best_amount_in_window(words, bal_win, require_decimal=True, allow_cents_heuristic=True)
+                _, val_win = _best_amount_in_window(
+                    words, bal_win,
+                    require_decimal=True, allow_cents_heuristic=True
+                )
                 win_str = _window_text(words, bal_win, pad=10)
-                need_roi = _should_run_roi(win_str, val_win_is_none=(val_win is None))
+                cj = _cents_join_from_window_tokens(words, bal_win, pad=10)
 
+                need_roi = _should_run_roi(win_str, val_win_is_none=(val_win is None))
                 val_roi = None
                 if need_roi and page_img_path and y0 is not None and y1 is not None:
                     x0, x1 = int(bal_win[0]) - 10, int(bal_win[1]) + 10
                     val_roi = _numeric_ocr_roi(page_img_path, x0, x1, y0, y1, pad=6, require_decimal=True)
-                    print(f"Running a 2nd OCR to get {val_roi} from {val_win}  raw='{win_str}'")
 
                 opening_value = (
-                    float(val_roi) if val_roi is not None else
-                    (float(val_win) if val_win is not None else opening_value)
+                    float(cj) if cj is not None else
+                    (float(val_roi) if val_roi is not None else
+                     (float(val_win) if val_win is not None else opening_value))
                 )
+
 
             # --- CLOSING ---  (elif to prevent any overlap with opening)
             elif RE_CLOSING_BAL.search(ltxt):
-                _, val_win = _best_amount_in_window(words, bal_win, require_decimal=True, allow_cents_heuristic=True)
+                # 1) window pass
+                _, val_win = _best_amount_in_window(
+                    words, bal_win,
+                    require_decimal=True, allow_cents_heuristic=True
+                )
                 win_str = _window_text(words, bal_win, pad=10)
-                need_roi = _should_run_roi(win_str, val_win_is_none=(val_win is None))
 
+                # 2) SPECIAL: space-cents join (e.g., '2770 34' -> 2770.34)
+                cj = _cents_join_from_window_tokens(words, bal_win, pad=10)
+
+                # 3) decide if we need ROI (non-whitelist chars or first pass failed)
+                need_roi = _should_run_roi(win_str, val_win_is_none=(val_win is None))
                 val_roi = None
                 if need_roi and page_img_path and y0 is not None and y1 is not None:
                     x0, x1 = int(bal_win[0]) - 10, int(bal_win[1]) + 10
                     val_roi = _numeric_ocr_roi(page_img_path, x0, x1, y0, y1, pad=6, require_decimal=True)
 
+                # 4) pick the best candidate (prefer space-cents if present)
                 closing_value = (
-                    float(val_roi) if val_roi is not None else
-                    (float(val_win) if val_win is not None else closing_value)
+                    float(cj) if cj is not None else
+                    (float(val_roi) if val_roi is not None else
+                     (float(val_win) if val_win is not None else closing_value))
                 )
 
     return opening_value, closing_value
