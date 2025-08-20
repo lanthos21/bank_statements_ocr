@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import re
 from typing import Optional, Dict, List, Tuple, Any
+# --- put near your other imports ---
+from typing import Optional
 
 import pandas as pd
 import cv2
@@ -175,16 +177,19 @@ def _numeric_ocr_roi(
     return parse_currency(raw, strip_currency=False)
 
 # Characters we accept in a clean amount capture
-_ALLOWED_AMOUNT_CHARS = set("0123456789.,+-()€£$")
+
+
+# --- helpers / gates ---
+
+_ALLOWED_AMOUNT_CHARS = set("0123456789.,+-€£$()")
 
 def _normalize_ws_and_minus(s: str) -> str:
-    # normalize unicode spaces and minus signs
     return (
         (s or "")
-        .replace("\u00A0", " ")   # NBSP
-        .replace("\u2009", " ")   # thin space
-        .replace("\u202F", " ")   # narrow NBSP
-        .replace("−", "-")        # unicode minus → hyphen-minus
+        .replace("\u00A0", " ")
+        .replace("\u2009", " ")
+        .replace("\u202F", " ")
+        .replace("−", "-")  # unicode minus → hyphen-minus
     )
 
 def _window_text(words: list[dict], window: tuple[float, float], pad: int = 10) -> str:
@@ -194,27 +199,70 @@ def _window_text(words: list[dict], window: tuple[float, float], pad: int = 10) 
         L = int(w.get("left", 0)); W = int(w.get("width", 0))
         cx = L + 0.5 * W
         if c0 <= cx <= c1:
-            toks.append(w.get("text") or "")
+            t = (w.get("text") or "")
+            # keep tokens that at least look amount-like
+            if any(ch.isdigit() for ch in t) or re.search(r"[.,+-]", t):
+                toks.append(t)
     return "".join(toks)
 
 def _should_run_roi(win_str: str, val_win_is_none: bool) -> bool:
     """
     Run ROI if:
-      - first pass failed but window has digits (likely a misread), OR
-      - any non-whitelisted char is present (letters, '/', etc.).
+      - first pass failed AND there is at least one digit, OR
+      - digits are present AND we see a suspicious char/pattern (/, O/o, I/l, trailing slash).
+    Never run if there are no digits.
     """
     s = _normalize_ws_and_minus(win_str)
     has_digit = any(ch.isdigit() for ch in s)
+    if not has_digit:
+        return False
     if val_win_is_none:
-        return has_digit  # only if there's something number-like to fix
-
-    # First pass gave a value; check for suspicious characters
-    for ch in s:
-        if ch == " ":     # ignore spacing
-            continue
-        if ch not in _ALLOWED_AMOUNT_CHARS:
-            return True   # suspicious → trigger ROI
+        return True
+    if any(c in s for c in "/OoIl"):
+        return True
+    if re.search(r"[.,]\s*/|/$|/\s*\d$", s):  # e.g. '52937.2/' or '59/20./4'
+        return True
+    # otherwise accept first pass
     return False
+
+def _rightmost_num_run_bounds(
+    words: list[dict],
+    window: tuple[float, float],
+    pad: int = 10,
+    merge_gap_px: int = 28
+) -> tuple[Optional[int], Optional[int]]:
+    """Tight X-bounds around the rightmost digit-containing run inside the window."""
+    c0, c1 = float(window[0]) - pad, float(window[1]) + pad
+    cand = []
+    for w in words or []:
+        txt = str(w.get("text") or "")
+        if not any(ch.isdigit() for ch in txt):
+            continue
+        L = int(w.get("left", 0)); W = int(w.get("width", 0))
+        cx = L + 0.5 * W
+        if c0 <= cx <= c1:
+            cand.append(w)
+    if not cand:
+        return (None, None)
+    cand.sort(key=lambda w: int(w.get("left", 0)))
+
+    runs, cur, last_r = [], [], None
+    for w in cand:
+        l = int(w.get("left", 0)); r = l + int(w.get("width", 0))
+        if last_r is None or (l - last_r) <= merge_gap_px:
+            cur.append(w)
+        else:
+            if cur: runs.append(cur)
+            cur = [w]
+        last_r = r
+    if cur: runs.append(cur)
+
+    run = runs[-1]  # rightmost
+    x0 = min(int(w.get("left", 0)) for w in run)
+    x1 = max(int(w.get("left", 0)) + int(w.get("width", 0)) for w in run)
+    return (x0, x1)
+
+# --- the fixed function (no ellipses) ---
 
 def _amount_with_numeric_fallback(
     words: list[dict],
@@ -235,21 +283,37 @@ def _amount_with_numeric_fallback(
     if val_win is not None:
         val_win = float(val_win)
 
-    # 2) inspect the raw window text for suspicious chars
+    # 2) inspect raw text in the window
     win_str = _window_text(words, window, pad=pad)
     need_roi = _should_run_roi(win_str, val_win_is_none=(val_win is None))
-
     if not need_roi or not page_img_path or line_y0 is None or line_y1 is None:
-        return val_win  # either clean or blank → keep first pass (or None)
+        return val_win  # blank/clean → keep first pass (or None)
 
+    # 3) tight crop around rightmost numeric run (fallback to right-edge band)
+    rx0, rx1 = _rightmost_num_run_bounds(words, window, pad=pad, merge_gap_px=merge_gap_px)
+    if rx0 is not None and rx1 is not None:
+        x0, x1 = rx0 - 4, rx1 + 4
+    else:
+        w0, w1 = int(window[0]), int(window[1])
+        width = w1 - w0
+        band = max(int(width * 0.5), 140)
+        x1 = w1 + 6
+        x0 = max(w0 - 6, x1 - band)
 
-    # 3) numeric-only ROI (whitelist) over the window bounds
-    x0, x1 = int(window[0] - pad), int(window[1] + pad)
-    val_roi = _numeric_ocr_roi(page_img_path or "", x0, x1, line_y0, line_y1, pad=4, require_decimal=require_decimal)
+    val_roi = _numeric_ocr_roi(page_img_path, x0, x1, line_y0, line_y1, pad=0, require_decimal=require_decimal)
 
-    print(f"Running a 2nd OCR to get {val_roi} from {val_win}  raw='{win_str}'")
-    # Prefer ROI if it succeeded; else fall back to first pass
+    # 4) accept ROI cautiously; prefer it only when suspicion is real (we already checked)
+    if val_roi is not None and val_win is not None:
+        # avoid wild magnitude jumps unless raw had '/'
+        if ("/" in win_str) or (0.1 <= (val_roi / max(val_win, 1e-6)) <= 10.0):
+            print(f"Running a 2nd OCR to get {val_roi} from {val_win}  raw='{win_str}'")
+            return float(val_roi)
+        return val_win
+
+    if val_roi is not None:
+        print(f"Running a 2nd OCR to get {val_roi} from {val_win}  raw='{win_str}'")
     return float(val_roi) if val_roi is not None else val_win
+
 
 
 # ---------------------------------
