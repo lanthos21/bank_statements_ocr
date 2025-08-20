@@ -1,6 +1,3 @@
-import os
-from pathlib import Path
-
 import fitz, cv2, numpy as np, pandas as pd, pytesseract
 from PIL import Image, ImageEnhance
 from ocr.helper_classes import PreprocessSettings, TesseractSettings, OcrProfile
@@ -66,12 +63,6 @@ def ocr_image_with_positions(img: np.ndarray, ts: TesseractSettings, tesseract_h
 def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | None = None) -> dict:
     doc = fitz.open(pdf_path)
     pages_output = []
-
-    # NEW: where we keep the processed page rasters so a parser can do ROI re-OCR
-    out_dir = os.path.join("results", "ocr_rasters")
-    os.makedirs(out_dir, exist_ok=True)
-    stem = Path(pdf_path).stem
-
     try:
         for page_num in range(doc.page_count):
             page = doc.load_page(page_num)
@@ -82,14 +73,11 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
                 c, m, cf = detect_page_currency_from_text(page, bank_code)
                 cur, cur_method, cur_conf = c, m, cf
 
-            # Raster + preprocess (your existing settings)
+            # print(f"cur, cur_method, cur_conf = {c}, {m}, {cf}")
+
+            # Continue with your existing raster + OCR (if you still need OCR)
             base = render_page_to_image(doc, page_num, profile.preprocess.dpi)
             processed = preprocess_image(base, profile.preprocess)
-
-            # NEW: persist processed raster so we can crop ROIs later
-            raster_path = os.path.join(out_dir, f"{stem}_p{page_num+1:03d}.png")
-            cv2.imwrite(raster_path, processed)
-
             df = ocr_image_with_positions(
                 processed,
                 profile.tesseract,
@@ -106,18 +94,9 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
                 line_text = " ".join(w["text"] for w in words)
                 line_y = int(words[0]["top"]) if words else None
 
-                # NEW: keep tight vertical bounds for this line (for ROI crops)
-                if len(words) > 0:
-                    y0 = int(min(w["top"] for w in words))
-                    y1 = int(max(w["bottom"] for w in words))
-                else:
-                    y0 = y1 = None
-
                 lines_output.append({
                     "line_num": int(ln),
                     "y": line_y,
-                    "y0": y0,                 # NEW
-                    "y1": y1,                 # NEW
                     "line_text": line_text,
                     "words": words
                 })
@@ -127,11 +106,7 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
                 "currency": cur,
                 "currency_detect_method": cur_method,
                 "currency_confidence": round(cur_conf, 2),
-                "lines": lines_output,
-                # NEW: help the parser crop ROIs
-                "raster_path": raster_path,
-                "image_width": int(processed.shape[1]),
-                "image_height": int(processed.shape[0]),
+                "lines": lines_output
             })
     finally:
         doc.close()

@@ -1,3 +1,5 @@
+import cv2
+
 from ocr.helper_classes import OcrProfile, PreprocessSettings, TesseractSettings
 
 AIB_SETTINGS = OcrProfile(
@@ -57,7 +59,7 @@ PTSB_SETTINGS = OcrProfile(
         use_adaptive_threshold=False,        # feed grayscale
         tesseract_handles_threshold=True,    # let Tesseract binarize internally
         resize_fx=1.5, resize_fy=1.5,       # gentle upscale
-        # resize_interpolation="cubic",        # IMPORTANT when upscaling
+        resize_interpolation=cv2.INTER_LINEAR_EXACT,        # IMPORTANT when upscaling
         use_sharpen_kernel=False,            # avoid the 3×3 kernel
         use_unsharp_mask=True,               # if your pipeline supports it
         # unsharp_amount=0.7, unsharp_radius=1.2,

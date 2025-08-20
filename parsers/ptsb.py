@@ -19,6 +19,9 @@ import re
 from typing import Optional, Dict, List, Tuple, Any
 
 import pandas as pd
+import cv2
+import pytesseract
+import numpy as np
 
 # ---------------------------------
 # Small parse helpers
@@ -104,11 +107,11 @@ def _find_compact_date_token(s: str) -> Optional[str]:
 
 # Special rows and furniture
 RE_BAL_FROM_LAST = re.compile(
-    r"\b(Balance\s+from\s+last\s+stmt|Balance\s+brought\s+forward|Balance\s+b\/f|Balance\s+B\/fwd)\b",
+    r"\b(?:Balance\s+from\s+last\s+stmt|Balance\s+brought\s+forward|Balance\s+b\/f|Balance\s+B\/fwd)\b",
     re.IGNORECASE,
 )
 RE_CLOSING_BAL = re.compile(
-    r"\b(Closing\s+Balance|Closing\s+bal|Balance\s+carried\s+forward|Closing\s+balance\s+carried\s+forward|Balance\s+c\/f)\b",
+    r"\b(?:Closing\s+Balance|Closing\s+bal|Balance\s+carried\s+forward|Closing\s+balance\s+carried\s+forward|Balance\s+c\/f)\b",
     re.IGNORECASE,
 )
 RE_PAGE_FURNITURE = re.compile(
@@ -136,6 +139,117 @@ def _norm(s: str) -> str:
         .replace("−", "-")
         .strip()
     )
+
+
+# ---------------------------------
+# OCR second pass helpers
+# ---------------------------------
+
+def _numeric_ocr_roi(
+    img_path: str,
+    x0: int, x1: int, y0: int, y1: int,
+    pad: int = 6,
+    require_decimal: bool = True,
+) -> Optional[float]:
+    if not img_path or y0 is None or y1 is None:
+        return None
+    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        return None
+    H, W = img.shape[:2]
+    xa = max(0, int(x0) - pad); xb = min(W, int(x1) + pad)
+    ya = max(0, int(y0) - pad); yb = min(H, int(y1) + pad)
+    if xa >= xb or ya >= yb:
+        return None
+    roi = img[ya:yb, xa:xb]
+
+    config = (
+        "--oem 1 --psm 7 "
+        "-c tessedit_char_whitelist=0123456789.,- "
+        "-c classify_bln_numeric_mode=1 "
+        "-c preserve_interword_spaces=1"
+    )
+    raw = (pytesseract.image_to_string(roi, config=config) or "").strip().replace("−", "-").replace(" ", "")
+    if require_decimal and (("." not in raw) and ("," not in raw)):
+        return None
+    return parse_currency(raw, strip_currency=False)
+
+# Characters we accept in a clean amount capture
+_ALLOWED_AMOUNT_CHARS = set("0123456789.,+-()€£$")
+
+def _normalize_ws_and_minus(s: str) -> str:
+    # normalize unicode spaces and minus signs
+    return (
+        (s or "")
+        .replace("\u00A0", " ")   # NBSP
+        .replace("\u2009", " ")   # thin space
+        .replace("\u202F", " ")   # narrow NBSP
+        .replace("−", "-")        # unicode minus → hyphen-minus
+    )
+
+def _window_text(words: list[dict], window: tuple[float, float], pad: int = 10) -> str:
+    c0, c1 = float(window[0]) - pad, float(window[1]) + pad
+    toks = []
+    for w in words or []:
+        L = int(w.get("left", 0)); W = int(w.get("width", 0))
+        cx = L + 0.5 * W
+        if c0 <= cx <= c1:
+            toks.append(w.get("text") or "")
+    return "".join(toks)
+
+def _should_run_roi(win_str: str, val_win_is_none: bool) -> bool:
+    """
+    Run ROI if:
+      - first pass failed but window has digits (likely a misread), OR
+      - any non-whitelisted char is present (letters, '/', etc.).
+    """
+    s = _normalize_ws_and_minus(win_str)
+    has_digit = any(ch.isdigit() for ch in s)
+    if val_win_is_none:
+        return has_digit  # only if there's something number-like to fix
+
+    # First pass gave a value; check for suspicious characters
+    for ch in s:
+        if ch == " ":     # ignore spacing
+            continue
+        if ch not in _ALLOWED_AMOUNT_CHARS:
+            return True   # suspicious → trigger ROI
+    return False
+
+def _amount_with_numeric_fallback(
+    words: list[dict],
+    window: tuple[float, float],
+    page_img_path: Optional[str],
+    line_y0: Optional[int],
+    line_y1: Optional[int],
+    pad: int,
+    merge_gap_px: int,
+    require_decimal: bool,
+) -> Optional[float]:
+    # 1) fast token pass
+    _, val_win = _best_amount_in_window(
+        words, window,
+        pad=pad, merge_gap_px=merge_gap_px,
+        require_decimal=require_decimal, allow_cents_heuristic=False
+    )
+    if val_win is not None:
+        val_win = float(val_win)
+
+    # 2) inspect the raw window text for suspicious chars
+    win_str = _window_text(words, window, pad=pad)
+    need_roi = _should_run_roi(win_str, val_win_is_none=(val_win is None))
+
+    if not need_roi or not page_img_path or line_y0 is None or line_y1 is None:
+        return val_win  # either clean or blank → keep first pass (or None)
+
+
+    # 3) numeric-only ROI (whitelist) over the window bounds
+    x0, x1 = int(window[0] - pad), int(window[1] + pad)
+    val_roi = _numeric_ocr_roi(page_img_path or "", x0, x1, line_y0, line_y1, pad=4, require_decimal=require_decimal)
+
+    print(f"Running a 2nd OCR to get {val_roi} from {val_win}  raw='{win_str}'")
+    # Prefer ROI if it succeeded; else fall back to first pass
+    return float(val_roi) if val_roi is not None else val_win
 
 
 # ---------------------------------
@@ -224,6 +338,7 @@ _NUMLIKE = re.compile(r"[0-9.,\-€£$/]")
 
 def _slash_to_seven(s: str) -> str:
     # Replace digit '/' digit with '7' →  15/30.16 -> 15730.16
+    return s
     return re.sub(r"(\d)\s*/\s*(\d)", r"\g<1>7\g<2>", s)
 
 def _normalize_for_parse(s: str) -> list[str]:
@@ -242,22 +357,47 @@ def _parse_joined_amount(
     require_decimal: bool,
     allow_cents_heuristic: bool,
 ) -> Optional[float]:
-    # First, try repaired/cleaned variants
-    for cand_s in _normalize_for_parse(raw_join):
+    """
+    Prefer repaired/cleaned candidates first so cases like '15/30.16' resolve to 15730.16.
+    Also skip candidates that lack a visible decimal when require_decimal=True.
+    """
+    base = raw_join or ""
+    cleaned = re.sub(r"[^0-9,\.\-€£$]", "", base)
+
+    # Prefer repairs first (critical: try slash→7 before the raw form)
+    candidates: list[str] = []
+    if "/" in base:
+        candidates += [_slash_to_seven(base)]
+    if "/" in cleaned:
+        candidates += [_slash_to_seven(cleaned)]
+    candidates += [cleaned, base]
+
+    # Add O→0 variants, keep unique order
+    ordered: list[str] = []
+    seen = set()
+    for c in candidates:
+        for v in (c, c.replace("O", "0").replace("o", "0")):
+            if v not in seen:
+                seen.add(v)
+                ordered.append(v)
+
+    # Parse in order; enforce visible decimal on the candidate (not just the fragment)
+    for cand_s in ordered:
         if require_decimal and (("." not in cand_s) and ("," not in cand_s)):
-            continue  # must visibly have decimals for per-row amounts
+            continue
         v = parse_currency(cand_s, strip_currency=False)
         if v is not None:
             return float(v)
 
-    # Last resort: cents heuristic (only when explicitly allowed)
+    # Last resort: cents heuristic
     if allow_cents_heuristic:
-        digits = re.sub(r"[^\d\-]", "", raw_join)
+        digits = re.sub(r"[^\d\-]", "", base)
         if re.fullmatch(r"-?\d{3,}", digits):
             sign = -1 if digits.startswith("-") else 1
             return sign * (int(digits.lstrip("-")) / 100.0)
 
     return None
+
 
 def _best_amount_in_window(
     words: list[dict],
@@ -371,6 +511,7 @@ def _best_amount_in_region_right_of(
 # ---------------------------------
 def extract_opening_closing_ptsb(
     pages: list[dict],
+    debug: bool = False,
 ) -> tuple[float | None, float | None]:
     opening_value: Optional[float] = None
     closing_value: Optional[float] = None
@@ -389,42 +530,50 @@ def extract_opening_closing_ptsb(
         if not last_windows:
             continue
 
-        # Rescue band: to the right of Paid In, up to just beyond Balance window
         rescue_xmin = None if paidin_cx is None else int(paidin_cx + 0.20 * (last_windows["balance_window"][0] - paidin_cx))
         rescue_xmax = None if balance_right is None else int(balance_right + 24)
 
         bal_win = last_windows["balance_window"]
+        page_img_path = page.get("raster_path")
 
         for line in lines:
             ltxt = (line.get("line_text") or "")
             words = line.get("words", []) or []
+            y0, y1 = line.get("y0"), line.get("y1")
 
+            # --- OPENING ---
             if RE_BAL_FROM_LAST.search(ltxt) and opening_value is None:
-                # Prefer the balance window; allow repairs and heuristic
-                _, val = _best_amount_in_window(
-                    words, bal_win,
-                    require_decimal=True, allow_cents_heuristic=True
-                )
-                if val is None and rescue_xmin is not None:
-                    _, val = _best_amount_in_region_right_of(
-                        words, x_min=rescue_xmin, x_max=rescue_xmax,
-                        require_decimal=True, allow_cents_heuristic=True
-                    )
-                if val is not None:
-                    opening_value = float(val)
+                # first pass in balance window
+                _, val_win = _best_amount_in_window(words, bal_win, require_decimal=True, allow_cents_heuristic=True)
+                win_str = _window_text(words, bal_win, pad=10)
+                need_roi = _should_run_roi(win_str, val_win_is_none=(val_win is None))
 
-            if RE_CLOSING_BAL.search(ltxt):
-                _, val = _best_amount_in_window(
-                    words, bal_win,
-                    require_decimal=True, allow_cents_heuristic=True
+                val_roi = None
+                if need_roi and page_img_path and y0 is not None and y1 is not None:
+                    x0, x1 = int(bal_win[0]) - 10, int(bal_win[1]) + 10
+                    val_roi = _numeric_ocr_roi(page_img_path, x0, x1, y0, y1, pad=6, require_decimal=True)
+                    print(f"Running a 2nd OCR to get {val_roi} from {val_win}  raw='{win_str}'")
+
+                opening_value = (
+                    float(val_roi) if val_roi is not None else
+                    (float(val_win) if val_win is not None else opening_value)
                 )
-                if val is None and rescue_xmin is not None:
-                    _, val = _best_amount_in_region_right_of(
-                        words, x_min=rescue_xmin, x_max=rescue_xmax,
-                        require_decimal=True, allow_cents_heuristic=True
-                    )
-                if val is not None:
-                    closing_value = float(val)  # last wins
+
+            # --- CLOSING ---  (elif to prevent any overlap with opening)
+            elif RE_CLOSING_BAL.search(ltxt):
+                _, val_win = _best_amount_in_window(words, bal_win, require_decimal=True, allow_cents_heuristic=True)
+                win_str = _window_text(words, bal_win, pad=10)
+                need_roi = _should_run_roi(win_str, val_win_is_none=(val_win is None))
+
+                val_roi = None
+                if need_roi and page_img_path and y0 is not None and y1 is not None:
+                    x0, x1 = int(bal_win[0]) - 10, int(bal_win[1]) + 10
+                    val_roi = _numeric_ocr_roi(page_img_path, x0, x1, y0, y1, pad=6, require_decimal=True)
+
+                closing_value = (
+                    float(val_roi) if val_roi is not None else
+                    (float(val_win) if val_win is not None else closing_value)
+                )
 
     return opening_value, closing_value
 
@@ -506,6 +655,9 @@ def parse_transactions_ptsb(
             windows = last_windows
             line_start, line_end = 0, len(lines)
 
+        # NEW: get per-page processed raster path for ROI crops
+        page_img_path = page.get("raster_path")
+
         for line in lines[line_start: line_end]:
             words = line.get("words", []) or []
             if not words:
@@ -526,21 +678,22 @@ def parse_transactions_ptsb(
             if row_date is None:
                 continue
 
-            # Amounts (require decimal, disable cents heuristic for stability)
-            _, debit  = _best_amount_in_window(
-                words, windows["withdrawn_window"],
-                pad=WINDOW_PAD, merge_gap_px=MERGE_GAP,
-                require_decimal=True, allow_cents_heuristic=False
+            # NEW: use line vertical bounds for precise ROI cropping
+            line_y0 = line.get("y0")
+            line_y1 = line.get("y1")
+
+            # Amounts (require decimals to avoid giant integer false-positives)
+            debit = _amount_with_numeric_fallback(
+                words, windows["withdrawn_window"], page_img_path, line_y0, line_y1,
+                pad=WINDOW_PAD, merge_gap_px=MERGE_GAP, require_decimal=True
             )
-            _, credit = _best_amount_in_window(
-                words, windows["paidin_window"],
-                pad=WINDOW_PAD, merge_gap_px=MERGE_GAP,
-                require_decimal=True, allow_cents_heuristic=False
+            credit = _amount_with_numeric_fallback(
+                words, windows["paidin_window"], page_img_path, line_y0, line_y1,
+                pad=WINDOW_PAD, merge_gap_px=MERGE_GAP, require_decimal=True
             )
-            _, bal    = _best_amount_in_window(
-                words, windows["balance_window"],
-                pad=WINDOW_PAD, merge_gap_px=MERGE_GAP,
-                require_decimal=True, allow_cents_heuristic=False
+            bal = _amount_with_numeric_fallback(
+                words, windows["balance_window"], page_img_path, line_y0, line_y1,
+                pad=WINDOW_PAD, merge_gap_px=MERGE_GAP, require_decimal=True
             )
 
             # Must have debit or credit to count as a transaction
@@ -577,6 +730,7 @@ def parse_transactions_ptsb(
                 "credit": float(credit) if credit is not None else None,
                 "balance": float(bal) if bal is not None else None,
             })
+
 
     return all_transactions, debug_rows, last_balance_seen
 
@@ -656,7 +810,7 @@ def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bo
     currency = "GBP" if iban and iban.upper().startswith("GB") else "EUR"
 
     # Opening/Closing via explicit labelled rows (with robust rescue)
-    explicit_open, explicit_close = extract_opening_closing_ptsb(pages)
+    explicit_open, explicit_close = extract_opening_closing_ptsb(pages, debug=debug)
 
     # Transactions (and remember last Balance for fallback closing)
     transactions, debug_rows, last_balance_seen = parse_transactions_ptsb(pages, iban=iban)
