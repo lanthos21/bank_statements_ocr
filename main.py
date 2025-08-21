@@ -1,64 +1,135 @@
 import json
 from pathlib import Path
+from typing import List, Dict, Any
+
 from ocr.ocr import ocr_pdf_to_raw_data
 from mapping import OCR_SETTINGS, BANK_PARSERS
 from ocr.detect_bank import detect_bank_provider
 from ocr.ocr_dump import save_ocr_words_csv, save_ocr_pretty_txt
 from utils import nuke_dir
-from validator2 import validate_statement_json
+from validator3 import validate
+
+
+def _write_ocr_dump(raw_ocr: Dict[str, Any], pdf_path: str) -> Path:
+    debug_txt_path = Path("results") / (Path(pdf_path).stem + "_ocr_dump.txt")
+    debug_txt_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(debug_txt_path, "w", encoding="utf-8") as f:
+        for page in raw_ocr.get("pages", []):
+            f.write(f"\n=== Page {page['page_number']} ===\n")
+            for line in page.get("lines", []):
+                f.write((line.get("line_text") or "") + "\n")
+    # print(f"📝 OCR debug dump saved to {debug_txt_path}")
+    return debug_txt_path
+
+
+def _normalize_parser_output(obj: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    Make parsers interchangeable:
+    - If a parser returns a bundle (has 'statements'), return that list.
+    - If it returns a single statement node (has 'currencies'), wrap to a list.
+    - If it returns the old single-statement-with-client shape, strip 'client'.
+    """
+    if not isinstance(obj, dict):
+        raise ValueError("Parser output must be a dict")
+
+    if "statements" in obj and isinstance(obj["statements"], list):
+        # New bundle shape returned by parser — just pass through
+        return obj["statements"]
+
+    if "currencies" in obj and isinstance(obj["currencies"], dict):
+        # Single statement node
+        return [obj]
+
+    # Old single-statement with client at top-level — convert to statement node
+    if "client" in obj and "currencies" in obj:
+        stmt = {k: v for k, v in obj.items() if k != "client"}
+        return [stmt]
+
+    raise ValueError("Unrecognized parser output shape")
+
+
+def process_pdf(pdf_path: str, client: str) -> List[Dict[str, Any]]:
+    bank_code, conf, method = detect_bank_provider(pdf_path)
+    if not bank_code:
+        raise RuntimeError("Could not auto-detect provider")
+
+    print(f"🏦 Detected: {bank_code} (conf {conf:.2f}, via {method}) - {pdf_path}")
+
+    account_type = "Current Account"  # override per file if you want
+
+    ocr_settings = OCR_SETTINGS[bank_code]
+    raw_ocr = ocr_pdf_to_raw_data(pdf_path, ocr_settings, bank_code=bank_code)
+
+    _write_ocr_dump(raw_ocr, pdf_path)
+
+    parser_func = BANK_PARSERS[bank_code]  # MUST return a statement node OR a bundle
+    parser_output = parser_func(raw_ocr, client=client, account_type=account_type)
+
+    # Optional per-file OCR artifacts (may overwrite if reused; fine for single-file run)
+    # save_ocr_words_csv(raw_ocr)
+    # save_ocr_pretty_txt(raw_ocr)
+
+    # Normalize to a list of statement nodes
+    statements = _normalize_parser_output(parser_output)
+
+    # Save each statement as its own JSON (handy for debugging)
+    out_dir = Path("results")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for stmt in statements:
+        fname = Path(pdf_path).stem + "_structured.json"
+        out_file = out_dir / fname
+        with open(out_file, "w", encoding="utf-8") as f:
+            json.dump(stmt, f, ensure_ascii=False, indent=2)
+        # Validate statement immediately
+        # validate(stmt)
+
+        # print(f"📄 Statement saved to {out_file}")
+
+    return statements
 
 
 def main():
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\david n26 statements.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\downloadStatement v2.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #4018 11.01.24 - 23.09.24.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #2587 april.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\Other 2 Pages from ptsb ca #4018 11.01.24 - 23.09.24.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\august 2025 current account account-statement_2025-01-01_2025-08-07_en-gb_423fb1-7838.pdf"
-    pdf_path = r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 31 january 2025-7750.pdf"
+    # For now, run against a single PDF (make it a list so multiple is trivial later)
+    pdf_paths = [
+        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 31 january 2025-7750.pdf",
+        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 30 may 2025-2533.pdf",
+        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 28 february 2025-9172.pdf",
+        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 may 2025-9645.pdf",
+        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 july 2025-3482.pdf",
+        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 january 2025-9006.pdf",
+        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 april 2025-5772.pdf",
+        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 01 august 2025-3641.pdf",
+    ]
+    pdf_paths = [
+        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 may 2025-9645.pdf",
+    ]
+    client = "Client 1"
+    bundle = {
+        "schema_version": "bank-ocr.v1",
+        "client": client,
+        "statements": []
+    }
 
     try:
-        bank_code, conf, method = detect_bank_provider(pdf_path)
-        if not bank_code:
-            raise RuntimeError("Could not auto-detect provider")
+        for pdf_path in pdf_paths:
+            stmts = process_pdf(pdf_path, client=client)
+            bundle["statements"].extend(stmts)
 
-        print(f"🏦 Detected: {bank_code} (conf {conf:.2f}, via {method})")
+        # Save & validate the final client bundle
+        bundle_out = Path("results") / f"{client.lower().replace(' ', '_')}_bundle.json"
+        with open(bundle_out, "w", encoding="utf-8") as f:
+            json.dump(bundle, f, ensure_ascii=False, indent=2)
 
-        client = "Client 1"
-        account_type = "Current Account"
+        print(f"\n### VALIDATING CLIENT BUNDLE")
+        validate(bundle)
 
-        ocr_settings = OCR_SETTINGS[bank_code]
-        raw_ocr = ocr_pdf_to_raw_data(pdf_path, ocr_settings, bank_code=bank_code)
-
-        # 🔹 Save raw OCR lines for debugging
-        debug_txt_path = Path("results") / (Path(pdf_path).stem + "_ocr_dump.txt")
-        debug_txt_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(debug_txt_path, "w", encoding="utf-8") as f:
-            for page in raw_ocr["pages"]:
-                f.write(f"\n=== Page {page['page_number']} ===\n")
-                for line in page["lines"]:
-                    f.write(line["line_text"] + "\n")
-        print(f"📝 OCR debug dump saved to {debug_txt_path}")
-
-        # 🔹 Parse into structured format
-        parser_func = BANK_PARSERS[bank_code]
-        structured_data = parser_func(raw_ocr, client=client, account_type=account_type)
-        save_ocr_words_csv(raw_ocr)
-        save_ocr_pretty_txt(raw_ocr)
-
-        output_file = Path("results") / (Path(pdf_path).stem + "_structured.json")
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(structured_data, f, ensure_ascii=False, indent=2)
-
-        # Run validator against exactly what was saved
-        saved_data = json.loads(Path(output_file).read_text(encoding="utf-8"))
-        validate_statement_json(saved_data)
-
-        print(f"\n\nStructured data saved to {output_file}")
+        print(f"\n✅ Bundle saved to {bundle_out}")
 
     finally:
+        # Always clean up raster cache
         rasters_dir = Path("results") / "ocr_rasters"
         nuke_dir(rasters_dir)
+
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,65 @@
+{
+  "schema_version": "bank-ocr.v1",
+  "client": "Client 1",
+  "statements": [
+    {
+      "statement_id": "stm_a1f03d",
+      "file_name": "aib current 31 january 2025-7750.pdf",
+      "institution": "AIB",
+      "account_type": "Current Account",
+      "account_holder": null,
+      "iban": "IE03AIBK93015601085000",
+      "bic": null,
+      "statement_start_date": "2025-01-02",
+      "statement_end_date": "2025-01-31",
+      "currencies": {
+        "EUR": {
+          "balances": {
+            "opening_balance":   { "summary_table": null, "transactions_table": 5826.48 },
+            "money_in_total":    { "summary_table": null, "transactions_table": 5845.57 },
+            "money_out_total":   { "summary_table": null, "transactions_table": 5313.13 },
+            "closing_balance":   { "summary_table": null, "transactions_table": 6358.92, "calculated": 6358.92 }
+          },
+          "transactions": [
+            {
+              "seq": 0,
+              "transactions_date": "2025-01-03",
+              "transaction_type": "debit",
+              "description": "VDC-DUNNES CORNELS",
+              "amount": 90.82
+            },
+            {
+              "seq": 1,
+              "transactions_date": "2025-01-03",
+              "transaction_type": "debit",
+              "description": "VDC-JOHNSTOWN TOTA",
+              "amount": 35.67
+            }
+          ]
+        }
+      }
+    },
+    {
+      "statement_id": "stm_b27c10",
+      "file_name": "ptsb ca #4018 11.01.24 - 23.09.24.pdf",
+      "institution": "PTSB",
+      "account_type": "Current Account",
+      "account_holder": "MRS ERIKA …",
+      "iban": "IE40IPBS99061025144018",
+      "bic": "IPBSIE2D",
+      "statement_start_date": "2024-01-11",
+      "statement_end_date": "2024-09-23",
+      "currencies": {
+        "EUR": {
+          "balances": {
+            "opening_balance": { "summary_table": null, "transactions_table": 56170.74 },
+            "money_in_total":  { "summary_table": null, "transactions_table": 55929.88 },
+            "money_out_total": { "summary_table": null, "transactions_table": 52056.98 },
+            "closing_balance": { "summary_table": 69201.84, "transactions_table": 60043.64, "calculated": 60043.64 }
+          },
+          "transactions": []
+        }
+      }
+    }
+  ]
+}

@@ -450,7 +450,7 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
                 word_count = int((df.get("text") is not None) and (df.text.str.strip() != "").sum())
             except Exception:
                 mean_conf, word_count = 0.0, 0
-            print(f"[p{pno}] base words={word_count}, conf≈{mean_conf:.1f}")
+            # print(f"[p{pno}] base words={word_count}, conf≈{mean_conf:.1f}")
 
             # ---- Decide whether to attempt a small-angle "scan rescue" OCR ----
             # Quick skew suspicion: projection variance improvement over tiny rotations
@@ -483,7 +483,7 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
 
             gray_for_skew = processed if processed.ndim == 2 else cv2.cvtColor(processed, cv2.COLOR_BGR2GRAY)
             suspect, best_ang_hint, rel_impr = _skew_suspect(gray_for_skew)
-            print(f"[p{pno}] skew check: suspect={bool(suspect)} (best≈{best_ang_hint:+.1f}°, {rel_impr*100:+.1f}%)")
+            # print(f"[p{pno}] skew check: suspect={bool(suspect)} (best≈{best_ang_hint:+.1f}°, {rel_impr*100:+.1f}%)")
 
             # Looser thresholds on tail pages (often camera photos)
             is_tail = (pno >= doc.page_count)  # last page only; use (pno >= doc.page_count-1) for last two
@@ -496,7 +496,7 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
             processed2 = None  # will hold scan-preprocessed raster if built
 
             if NEEDS_RESCUE:
-                print(f"[p{pno}] rescue triggered ({', '.join(k for k,v in {'low_words':low_words,'low_conf':low_conf,'skew':skew_flag}.items() if v)})")
+                # print(f"[p{pno}] rescue triggered ({', '.join(k for k,v in {'low_words':low_words,'low_conf':low_conf,'skew':skew_flag}.items() if v)})")
                 base_cfg = profile.tesseract.build_config()
 
                 # Re-render as RGB (photos fare better), then to gray
@@ -506,7 +506,7 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
 
                 # Small-angle deskew search (±6°), traced inside helper if you enabled it there
                 gray2, ang = _deskew_by_projection_search(gray2, max_deg=6.0)
-                print(f"[p{pno}] deskew angle={ang:+.2f}°")
+                # print(f"[p{pno}] deskew angle={ang:+.2f}°")
 
                 # Scan-friendly preprocessing (de-shadow, CLAHE, adaptive thr, unsharp)
                 processed2 = _preprocess_scan_rescue(gray2)
@@ -530,17 +530,17 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
                     mean_conf2 = float(conf2[conf2 >= 0].mean()) if conf2 is not None else 0.0
                     word_count2 = int((df2.get("text") is not None) and (df2.text.str.strip() != "").sum())
 
-                print(f"[p{pno}] rescue words={word_count2} (Δ {word_count2 - word_count}), conf≈{mean_conf2:.1f} (Δ {mean_conf2 - mean_conf:.1f})")
+                # print(f"[p{pno}] rescue words={word_count2} (Δ {word_count2 - word_count}), conf≈{mean_conf2:.1f} (Δ {mean_conf2 - mean_conf:.1f})")
 
                 # Keep full rescue only if it materially improves global metrics
                 if (word_count2 > word_count + 40) or (mean_conf2 > mean_conf + 8):
-                    print(f"[p{pno}] rescue ACCEPTED")
+                    # print(f"[p{pno}] rescue ACCEPTED")
                     df = df2
                     processed = processed2
                     rescue_path = os.path.join(out_dir, f"{stem}_p{pno:03d}_rescue.png")
                     _safe_write_png(rescue_path, processed2)
-                else:
-                    print(f"[p{pno}] rescue rejected (no material improvement)")
+                # else:
+                    # print(f"[p{pno}] rescue rejected (no material improvement)")
                     # Even if rejected, we will still use processed2 (if present) for band rescues below.
 
             # ---- Build base lines_output from the kept df ----
@@ -639,7 +639,7 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
                     before = len(lines_output)
                     lines_output = _merge_rescued_lines(lines_output, rescued_lines)
                     after = len(lines_output)
-                    print(f"[p{pno}] band rescue merged {after - before} lines from {len(gaps)} gaps")
+                    # print(f"[p{pno}] band rescue merged {after - before} lines from {len(gaps)} gaps")
 
             # ---- Finalize page ----
             pages_output.append({

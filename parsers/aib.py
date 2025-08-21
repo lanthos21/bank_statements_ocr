@@ -1,26 +1,14 @@
 # aib.py
-# AIB parser:
-# - Header: "Date | Details | Debit €|£ | Credit €|£ | Balance €|£"
-# - Amounts are RIGHT-JUSTIFIED under the three amount columns
-# - Opening balance comes from the first "BALANCE FORWARD …" encountered
-# - Closing balance is the last number in the Balance column
-# - Output schema:
-#     currencies: {
-#       <CUR>: {
-#         balances: {
-#           opening_balance: { summary_table: <float|None>, transactions_table: <float|None> }
-#           money_in_total:  { summary_table: <float|None>, transactions_table: <float> }
-#           money_out_total: { summary_table: <float|None>, transactions_table: <float> }
-#           closing_balance: { summary_table: <float|None>, transactions_table: <float|None>, calculated: <float|None> }
-#         },
-#         transactions: [ { seq, transactions_date, transaction_type, description, amount } ... ]
-#       }
-#     }
+# AIB parser → multi-statement bundle (single statement for now)
+# - Keeps transactions simple: {seq, transactions_date, transaction_type, description, amount}
+# - Statement node contains: institution, account_type, account_holder, iban, bic,
+#   statement_start_date, statement_end_date, currencies{...}
+# - Top-level bundle: { schema_version, client, statements: [ <statement> ] }
 
 from __future__ import annotations
 
 import re
-from collections import defaultdict
+import hashlib
 from typing import Optional, Dict, List, Any
 
 import pandas as pd
@@ -251,7 +239,6 @@ def extract_closing_balance(pages: list[dict]) -> Optional[float]:
 
 def parse_transactions(pages: list[dict], iban: str | None = None) -> list[dict]:
     all_transactions: List[dict] = []
-    current_currency = "GBP" if iban and iban.upper().startswith("GB") else "EUR"
     seq = 0
 
     for page_num, page in enumerate(pages or []):
@@ -391,10 +378,10 @@ def infer_currency_from_headers(pages: list[dict]) -> str | None:
     return None
 
 # ----------------------------
-# Public entrypoint
+# Build a single statement node
 # ----------------------------
 
-def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bool = True):
+def _make_statement_node(raw_ocr: dict, client: str, account_type: str, debug: bool = True) -> dict:
     pages = raw_ocr.get("pages", []) or []
 
     # IBAN & currency detection
@@ -453,15 +440,43 @@ def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bo
         }
     }
 
+    # Optional lightweight statement_id
+    sid_basis = f"{raw_ocr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
+    statement_id = hashlib.sha1(sid_basis.encode("utf-8")).hexdigest()[:12] if sid_basis.strip("|") else None
+
     return {
-        "client": client,
+        "statement_id": statement_id,
         "file_name": raw_ocr.get("file_name"),
-        "account_holder": None,
         "institution": "AIB",
         "account_type": account_type,
+        "account_holder": None,
         "iban": iban,
         "bic": None,
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
     }
+
+# ----------------------------
+# Public entrypoint: bundle with one statement
+# ----------------------------
+
+def parse_statement_bundle(raw_ocr: dict, client: str = "Unknown", account_type: str = "Unknown", debug: bool = True) -> dict:
+    """
+    Return the new multi-statement bundle schema with a single statement.
+    Later, you can append more statements to the 'statements' list.
+    """
+    stmt = _make_statement_node(raw_ocr, client=client, account_type=account_type, debug=debug)
+    return {
+        "schema_version": "bank-ocr.v1",
+        "client": client,
+        "statements": [stmt],
+    }
+
+# (Optional) Backwards compatibility: if something still expects the old single-statement object
+def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = "Unknown", debug: bool = True) -> dict:
+    """
+    Kept for compatibility. Returns ONLY the inner statement object (not the bundle).
+    Prefer 'parse_statement_bundle' going forward.
+    """
+    return _make_statement_node(raw_ocr, client=client, account_type=account_type, debug=debug)
