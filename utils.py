@@ -1,5 +1,7 @@
 from lang import MONTHS_MAP
 import re
+import shutil, time, stat
+from pathlib import Path
 
 def parse_currency(value: str, strip_currency: bool = True) -> float | None:
     """
@@ -93,3 +95,32 @@ def date_variants(iso_date: str) -> list[str]:
         d.strftime("%d/%m/%Y"),   # 10/05/2024
         d.strftime("%d-%m-%Y"),   # 10-05-2024
     ]
+
+
+def nuke_dir(path: Path, tries: int = 3, delay: float = 0.25) -> None:
+    """
+    Remove a directory tree, tolerating Windows file-lock weirdness.
+    Retries a few times after chmod-ing read-only files.
+    """
+    if not path.exists():
+        return
+
+    def _on_rm_error(func, p, exc_info):
+        try:
+            os.chmod(p, stat.S_IWRITE)
+        except Exception:
+            pass
+        try:
+            func(p)
+        except Exception:
+            pass
+
+    for i in range(tries):
+        try:
+            shutil.rmtree(path, onerror=_on_rm_error)
+            return
+        except Exception:
+            if i == tries - 1:
+                print(f"⚠️  Failed to delete {path} after {tries} tries.")
+                return
+            time.sleep(delay)

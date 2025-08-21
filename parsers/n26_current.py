@@ -401,10 +401,7 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
                 "transactions_date": iso_date,
                 "transaction_type": "credit" if float(val) > 0 else "debit",
                 "description": desc,
-                "amount": {
-                    "value": abs(float(val)),  # positive magnitude
-                    "currency": currency,
-                },
+                "amount": abs(float(val)),
             })
             seq += 1
 

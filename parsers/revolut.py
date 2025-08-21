@@ -522,8 +522,7 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
                 "transactions_date": transaction_date,
                 "transaction_type": "credit" if credit_amount > 0 else "debit",
                 "description": clean_desc,
-                "amount": {"value": credit_amount if credit_amount > 0 else debit_amount,
-                           "currency": current_currency},
+                "amount": credit_amount if credit_amount > 0 else debit_amount,
             })
             seq += 1
 
