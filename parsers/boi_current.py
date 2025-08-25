@@ -21,6 +21,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from typing import Optional, Dict, List, Any
 
@@ -402,19 +403,23 @@ def _build_balances(buckets: Dict[str, List[dict]], opening: float | None, closi
     return out
 
 # ---------- Public entrypoint ----------
-def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bool = True):
+def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = "Unknown", debug: bool = False) -> dict:
+    """
+    Returns a single 'statement node' (no top-level 'client'), matching the AIB shape.
+    This lets main.py call parse_statement repeatedly (across banks) and bundle all
+    statements into one JSON.
+    """
     pages = raw_ocr.get("pages", []) or []
 
+    # IBAN (used to bucket currency)
     iban = extract_iban(pages)
 
-    # Transactions
+    # Transactions + opening/closing
     transactions = parse_transactions(pages, debug=debug)
-
-    # Opening/closing
     opening_val, start_date_open = extract_opening_balance_and_start_date(pages, debug=debug)
     closing_val = extract_closing_balance(pages, debug=debug)
 
-    # Currency bucket
+    # Currency bucket + balances structure (same layout as AIB)
     buckets = _bucket_currency(transactions, iban)
     currencies = _build_balances(buckets, opening=opening_val, closing_stmt=closing_val)
 
@@ -427,12 +432,16 @@ def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bo
         start_date = start_date_open
         end_date = None
 
+    # Optional lightweight statement_id (mirrors AIB approach)
+    sid_basis = f"{raw_ocr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
+    statement_id = hashlib.sha1(sid_basis.encode("utf-8")).hexdigest()[:12] if sid_basis.strip("|") else None
+
     return {
-        "client": client,
+        "statement_id": statement_id,
         "file_name": raw_ocr.get("file_name"),
-        "account_holder": None,
         "institution": "Bank of Ireland",
         "account_type": account_type,
+        "account_holder": None,
         "iban": iban,
         "bic": None,
         "statement_start_date": start_date,
