@@ -6,6 +6,8 @@ from PIL import Image, ImageEnhance
 
 from ocr.helper_classes import PreprocessSettings, TesseractSettings, OcrProfile
 from ocr.detect_currency import detect_page_currency_from_text
+from ocr.unified_lines import merge_native_page_to_ocr_shape
+
 
 # --- Debug toggles ---
 DEBUG_OCR = True                          # turn on/off prints
@@ -14,6 +16,99 @@ FORCE_RESCUE_PAGES: set[int] = set()      # e.g. {5, 6} to force pages 5 & 6 thr
 def _dbg(msg: str):
     if DEBUG_OCR:
         print(msg)
+
+
+# ---------------------------------
+# Native text where available
+# ---------------------------------
+
+def _native_page_to_ocr_shape_lines(page, img_w: int, img_h: int,
+                                    post_line_hook=None,
+                                    processed_img: np.ndarray | None = None) -> list[dict]:
+    """
+    Use native PDF text (no OCR) and emit OCR-shaped lines:
+      [{line_num,y,y0,y1,line_text,words:[{text,left,top,width,height,right,bottom,...}], native=True}]
+    Coords are scaled to the raster size (img_w,img_h) so downstream parsers
+    can use the same thresholds/column cuts as OCR.
+    """
+    try:
+        # words: [x0,y0,x1,y1,"text", block_no, line_no, word_no]
+        words = page.get_text("words") or []
+    except Exception:
+        words = []
+
+    if not words:
+        return []
+
+    # Scale PDF points -> raster pixels
+    rect = page.rect
+    fx = (img_w / float(rect.width)) if rect.width else 1.0
+    fy = (img_h / float(rect.height)) if rect.height else 1.0
+
+    # group by (block_no, line_no) to get "native lines"
+    from collections import defaultdict
+    buckets = defaultdict(list)
+    for x0, y0, x1, y1, txt, bno, lno, wno in words:
+        t = (txt or "").strip()
+        if not t:
+            continue
+        left   = int(round(x0 * fx)); right  = int(round(x1 * fx))
+        top    = int(round(y0 * fy)); bottom = int(round(y1 * fy))
+        buckets[(int(bno), int(lno))].append({
+            "text": t,
+            "left": left,
+            "top": top,
+            "width": max(0, right - left),
+            "height": max(0, bottom - top),
+            "right": right,
+            "bottom": bottom,
+            "block_num": int(bno),
+            "par_num": -1,
+            "line_num": int(wno),
+        })
+
+    native_lines = []
+    for (_, _), wlist in buckets.items():
+        if not wlist:
+            continue
+        wlist.sort(key=lambda w: (w["left"], w["top"]))
+        y0 = min(w["top"] for w in wlist)
+        y1 = max(w["bottom"] for w in wlist)
+        native_lines.append({
+            "line_num": -1,
+            "y": int(wlist[0]["top"]),
+            "y0": int(y0),
+            "y1": int(y1),
+            "line_text": " ".join(w["text"] for w in wlist),
+            "words": wlist,
+        })
+
+    # Merge horizontally by row so we get full transaction rows like the OCR path
+    merged = merge_native_page_to_ocr_shape(native_lines)
+
+    # Keep numbering stable and mark origin
+    for i, ln in enumerate(merged, start=1):
+        ln["line_num"] = i
+        ln["native"] = True
+
+    # Run same post_line_hook for parity
+    if post_line_hook is not None and processed_img is not None:
+        new = []
+        for ln in merged:
+            df_line = pd.DataFrame(ln["words"]).sort_values(by="left")
+            df_line = post_line_hook(df_line, processed_img)
+            words2 = df_line.to_dict(orient="records")
+            if words2:
+                ln["words"] = words2
+                ln["line_text"] = " ".join(w["text"] for w in words2)
+                ln["y"]  = int(words2[0]["top"])
+                ln["y0"] = int(min(w["top"] for w in words2))
+                ln["y1"] = int(max(w["bottom"] for w in words2))
+                new.append(ln)
+        merged = new
+
+    return merged
+
 
 # ---------------------------------
 # Band rescue helpers
@@ -435,6 +530,40 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
             # Persist processed raster so parsers can run ROI crops later
             raster_path = os.path.join(out_dir, f"{stem}_p{pno:03d}.png")
             _safe_write_png(raster_path, processed)
+
+            # ---- NEW: Try native extraction first (unless forced rescue) ----
+            lines_output: list[dict] = []
+            NATIVE_OK = False
+            if pno not in FORCE_RESCUE_PAGES:
+                native_lines = _native_page_to_ocr_shape_lines(
+                    page,
+                    img_w=int(processed.shape[1]),
+                    img_h=int(processed.shape[0]),
+                    post_line_hook=profile.post_line_hook,
+                    processed_img=processed,
+                )
+                # Light sanity: at least a few lines and at least one line with an amount-like token
+                if native_lines:
+                    has_amount = any(
+                        _has_amount_like(ln.get("words") or [], page_width=int(processed.shape[1]), min_x_frac=None)
+                        for ln in native_lines)
+                    if has_amount or len(native_lines) >= 5:
+                        lines_output = native_lines
+                        NATIVE_OK = True
+
+            # If native worked, skip image OCR for this page
+            if NATIVE_OK:
+                pages_output.append({
+                    "page_number": pno,
+                    "currency": cur,
+                    "currency_detect_method": cur_method,
+                    "currency_confidence": round(cur_conf, 2),
+                    "lines": lines_output,
+                    "raster_path": raster_path,  # still handy for any ROI rescans later
+                    "image_width": int(processed.shape[1]),
+                    "image_height": int(processed.shape[0]),
+                })
+                continue
 
             # ---- Base OCR ----
             df = ocr_image_with_positions(
