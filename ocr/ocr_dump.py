@@ -1,4 +1,18 @@
 import os, pandas as pd
+from pathlib import Path
+from typing import List, Dict, Any
+
+def write_ocr_dump(raw_ocr: Dict[str, Any], pdf_path: str) -> Path:
+    debug_txt_path = Path("results_audit") / (Path(pdf_path).stem + "_ocr_dump.txt")
+    debug_txt_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(debug_txt_path, "w", encoding="utf-8") as f:
+        for page in raw_ocr.get("pages", []):
+            f.write(f"\n=== Page {page['page_number']} ===\n")
+            for line in page.get("lines", []):
+                f.write((line.get("line_text") or "") + "\n")
+    # print(f"📝 OCR debug dump saved to {debug_txt_path}")
+    return debug_txt_path
+
 
 def save_ocr_words_csv(raw_ocr, out_path="results_audit/ocr_words.csv"):
     rows = []

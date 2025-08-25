@@ -348,6 +348,7 @@ def validate(data: dict) -> dict:
       - If 'statements' is present -> bundle mode
       - Else -> single-statement mode (backward compatible with validator2)
     """
+    print(f"\n### VALIDATING BUNDLE")
     if isinstance(data, dict) and "statements" in data:
         return validate_bundle_json(data)
     else:

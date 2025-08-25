@@ -461,19 +461,6 @@ def _make_statement_node(raw_ocr: dict, client: str, account_type: str, debug: b
 # Public entrypoint: bundle with one statement
 # ----------------------------
 
-def parse_statement_bundle(raw_ocr: dict, client: str = "Unknown", account_type: str = "Unknown", debug: bool = True) -> dict:
-    """
-    Return the new multi-statement bundle schema with a single statement.
-    Later, you can append more statements to the 'statements' list.
-    """
-    stmt = _make_statement_node(raw_ocr, client=client, account_type=account_type, debug=debug)
-    return {
-        "schema_version": "bank-ocr.v1",
-        "client": client,
-        "statements": [stmt],
-    }
-
-# (Optional) Backwards compatibility: if something still expects the old single-statement object
 def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = "Unknown", debug: bool = True) -> dict:
     """
     Kept for compatibility. Returns ONLY the inner statement object (not the bundle).
