@@ -11,7 +11,7 @@ from validator3 import validate
 
 
 def _write_ocr_dump(raw_ocr: Dict[str, Any], pdf_path: str) -> Path:
-    debug_txt_path = Path("results") / (Path(pdf_path).stem + "_ocr_dump.txt")
+    debug_txt_path = Path("results_audit") / (Path(pdf_path).stem + "_ocr_dump.txt")
     debug_txt_path.parent.mkdir(parents=True, exist_ok=True)
     with open(debug_txt_path, "w", encoding="utf-8") as f:
         for page in raw_ocr.get("pages", []):
@@ -73,7 +73,7 @@ def process_pdf(pdf_path: str, client: str) -> List[Dict[str, Any]]:
     statements = _normalize_parser_output(parser_output)
 
     # Save each statement as its own JSON (handy for debugging)
-    out_dir = Path("results")
+    out_dir = Path("results_audit")
     out_dir.mkdir(parents=True, exist_ok=True)
     for stmt in statements:
         fname = Path(pdf_path).stem + "_structured.json"
@@ -89,7 +89,6 @@ def process_pdf(pdf_path: str, client: str) -> List[Dict[str, Any]]:
 
 
 def main():
-    # For now, run against a single PDF (make it a list so multiple is trivial later)
     pdf_paths = [
         r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 31 january 2025-7750.pdf",
         r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 30 may 2025-2533.pdf",
@@ -112,8 +111,8 @@ def main():
 
     try:
         for pdf_path in pdf_paths:
-            stmts = process_pdf(pdf_path, client=client)
-            bundle["statements"].extend(stmts)
+            current_statement = process_pdf(pdf_path, client=client)
+            bundle["statements"].extend(current_statement)
 
         # Save & validate the final client bundle
         bundle_out = Path("results") / f"{client.lower().replace(' ', '_')}_bundle.json"

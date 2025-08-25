@@ -1,6 +1,6 @@
 import os, pandas as pd
 
-def save_ocr_words_csv(raw_ocr, out_path="results/ocr_words.csv"):
+def save_ocr_words_csv(raw_ocr, out_path="results_audit/ocr_words.csv"):
     rows = []
     for p in raw_ocr.get("pages", []):
         page_no = p.get("page_number")
@@ -31,7 +31,7 @@ def save_ocr_words_csv(raw_ocr, out_path="results/ocr_words.csv"):
     print(f"🔎 OCR words CSV saved to {out_path}")
 
 
-def save_ocr_pretty_txt(raw_ocr, out_path="results/ocr_words_pretty.txt"):
+def save_ocr_pretty_txt(raw_ocr, out_path="results_audit/ocr_words_pretty.txt"):
     with open(out_path, "w", encoding="utf-8") as f:
         for p in raw_ocr.get("pages", []):
             f.write(f"=== Page {p.get('page_number')} ===\n")
