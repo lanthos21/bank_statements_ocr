@@ -7,36 +7,10 @@ from mapping import OCR_SETTINGS, BANK_PARSERS
 from ocr.detect_bank import detect_bank_provider
 from ocr.ocr_dump import write_ocr_dump, save_ocr_words_csv, save_ocr_pretty_txt
 from utils import nuke_dir
-from validator3 import validate
+from validator import validate
 
 
-def _normalize_parser_output(obj: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """
-    Make parsers interchangeable:
-    - If a parser returns a bundle (has 'statements'), return that list.
-    - If it returns a single statement node (has 'currencies'), wrap to a list.
-    - If it returns the old single-statement-with-client shape, strip 'client'.
-    """
-    if not isinstance(obj, dict):
-        raise ValueError("Parser output must be a dict")
-
-    if "statements" in obj and isinstance(obj["statements"], list):
-        # New bundle shape returned by parser — just pass through
-        return obj["statements"]
-
-    if "currencies" in obj and isinstance(obj["currencies"], dict):
-        # Single statement node
-        return [obj]
-
-    # Old single-statement with client at top-level — convert to statement node
-    if "client" in obj and "currencies" in obj:
-        stmt = {k: v for k, v in obj.items() if k != "client"}
-        return [stmt]
-
-    raise ValueError("Unrecognized parser output shape")
-
-
-def process_pdf(pdf_path: str, client: str) -> List[Dict[str, Any]]:
+def process_pdf(pdf_path: str, client: str) -> Dict[str, Any]:
     bank_code, conf, method = detect_bank_provider(pdf_path)
     if not bank_code:
         raise RuntimeError("Could not auto-detect provider")
@@ -50,30 +24,29 @@ def process_pdf(pdf_path: str, client: str) -> List[Dict[str, Any]]:
 
     write_ocr_dump(raw_ocr, pdf_path)
 
-    parser_func = BANK_PARSERS[bank_code]  # MUST return a statement node OR a bundle
-    parser_output = parser_func(raw_ocr, client=client, account_type=account_type)
+    parser_func = BANK_PARSERS[bank_code]  # MUST return a single statement node
+    stmt = parser_func(raw_ocr, client=client, account_type=account_type)
 
-    # Optional per-file OCR artifacts (may overwrite if reused; fine for single-file run)
+    # Enforce the new contract
+    if not isinstance(stmt, dict) or "currencies" not in stmt:
+        raise ValueError(f"Parser for {bank_code} must return a statement node (dict with 'currencies').")
+
+    # Optional per-file OCR artifacts
     # save_ocr_words_csv(raw_ocr)
     # save_ocr_pretty_txt(raw_ocr)
 
-    # Normalize to a list of statement nodes
-    statements = _normalize_parser_output(parser_output)
-
-    # Save each statement as its own JSON (handy for debugging)
+    # Save the statement as its own JSON (handy for debugging)
     out_dir = Path("results_audit")
     out_dir.mkdir(parents=True, exist_ok=True)
-    for stmt in statements:
-        filename = Path(pdf_path).stem + "_structured.json"
-        out_file = out_dir / filename
-        with open(out_file, "w", encoding="utf-8") as f:
-            json.dump(stmt, f, ensure_ascii=False, indent=2)
-        # Validate statement immediately
-        # validate(stmt)
-        # print(f"📄 Statement saved to {out_file}")
+    filename = Path(pdf_path).stem + "_structured.json"
+    out_file = out_dir / filename
+    with open(out_file, "w", encoding="utf-8") as f:
+        json.dump(stmt, f, ensure_ascii=False, indent=2)
 
-    return statements
+    # (Optional) per-statement validate until bundle validator is updated
+    # validate(stmt)
 
+    return stmt
 
 def main():
     pdf_paths = [
@@ -92,11 +65,21 @@ def main():
         r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf",
         r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency.pdf",
     ]
-    client = "Client 1"
+    # Provide one or two lists as appropriate
+    client_pdfs: Dict[str, List[str]] = {
+        "Client 1": [
+            r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut euro with pockets.pdf",
+            r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 july 2025-3482.pdf",
+        ],
+        "Client 2": [
+            r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf",
+            r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency.pdf",
+        ],
+    }
+
     bundle = {
         "schema_version": "bank-ocr.v1",
-        "client": client,
-        "statements": []
+        "clients": []
     }
 
     try:
@@ -104,15 +87,20 @@ def main():
         prev = Path("results_audit")
         nuke_dir(prev)
 
-        # Process each PDF
-        for pdf_path in pdf_paths:
-            current_statement = process_pdf(pdf_path, client=client)
-            bundle["statements"].extend(current_statement)
+        for client_name, pdf_paths in client_pdfs.items():
+            client_block = {"name": client_name, "statements": []}
+            for pdf_path in pdf_paths:
+                stmt = process_pdf(pdf_path, client=client_name)
+                client_block["statements"].append(stmt)
+            bundle["clients"].append(client_block)
 
-        # Save & validate the final bundle
-        bundle_out = Path("results") / f"{client.lower().replace(' ', '_')}_bundle.json"
+        # Save & (optionally) validate
+        Path("results").mkdir(parents=True, exist_ok=True)
+        out_name = "_".join(n.lower().replace(" ", "_") for n in client_pdfs.keys()) + "_bundle.json"
+        bundle_out = Path("results") / out_name
         with open(bundle_out, "w", encoding="utf-8") as f:
             json.dump(bundle, f, ensure_ascii=False, indent=2)
+
         validate(bundle)
         print(f"\n✅ Bundle saved to {bundle_out}")
 

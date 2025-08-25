@@ -1,16 +1,22 @@
-# validator.py
-
+# validator3.py
 import math
+from copy import deepcopy
+from typing import Dict, Any, List, Tuple, Optional
 
-ABS_TOL = 0.01  # cents tolerance
+ABS_TOL = 0.01       # cents tolerance
+COERCE_LEGACY = True # convert legacy currency sections into the strict structure (if needed)
 
 
+# ----------------------------
+# Small helpers
+# ----------------------------
 def _num(x):
-    return None if x is None else float(x)
-
-
-def _val(node):
-    return None if not node else _num(node.get("value"))
+    if x is None:
+        return None
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
 
 
 def _fmt(x):
@@ -28,189 +34,408 @@ def _cmp(a, b):
     return d, math.isclose(float(a), float(b), abs_tol=ABS_TOL)
 
 
-def _opening_from_rows(txs):
+def _tx_amount(t):
+    """Return transaction amount as float, whether 'amount' is a float or {'value': ...}."""
+    a = t.get("amount")
+    if isinstance(a, (int, float)):
+        return _num(a)
+    if isinstance(a, dict):
+        return _num(a.get("value"))
+    return None
+
+
+def _tx_sums(txs):
+    """Return (in_sum, out_sum) from transactions list (amount may be float or dict)."""
+    in_tx  = round(sum((_tx_amount(t) or 0.0) for t in txs if t.get("transaction_type") == "credit"), 2)
+    out_tx = round(sum((_tx_amount(t) or 0.0) for t in txs if t.get("transaction_type") == "debit"),  2)
+    return in_tx, out_tx
+
+
+def _signed_amount(t):
+    return _num(t.get("signed_amount"))
+
+
+def _signed_sum(txs):
+    vals = [_signed_amount(t) for t in txs if "signed_amount" in t]
+    return None if not vals else round(sum(v for v in vals if v is not None), 2)
+
+
+# ----------------------------
+# Schema enforcement & coercion (per-currency)
+# ----------------------------
+STRICT_BALANCES_TEMPLATE = {
+    "opening_balance":   {"summary_table": None, "transactions_table": None},
+    "money_in_total":    {"summary_table": None, "transactions_table": None},
+    "money_out_total":   {"summary_table": None, "transactions_table": None},
+    "closing_balance":   {"summary_table": None, "transactions_table": None, "calculated": None},
+}
+
+def _ensure_balances_shape(balances: dict) -> dict:
+    """Ensure the required keys exist; fill missing leaves with None."""
+    shaped = deepcopy(STRICT_BALANCES_TEMPLATE)
+    if not isinstance(balances, dict):
+        return shaped
+    for k, sub in STRICT_BALANCES_TEMPLATE.items():
+        v = balances.get(k)
+        if not isinstance(v, dict):
+            continue
+        shaped[k].update({kk: _num(v.get(kk)) for kk in sub.keys()})
+    return shaped
+
+
+def _coerce_legacy_currency_section(sec: dict) -> dict:
     """
-    Derive opening using only the first transaction row:
-    opening = first_stmt_balance - amount (credit) OR + amount (debit).
+    Convert a legacy currency section into the strict structure.
+    Legacy examples:
+      opening_balance: {value, currency} or number
+      money_in_total / money_out_total: ditto
+      closing_balance_statement / closing_balance_calculated
     """
-    if not txs:
-        return None
-    first = txs[0]
-    bal = _val(first.get("balance_after_statement"))
-    amt = _num(first.get("amount", {}).get("value"))
-    typ = first.get("transaction_type")
-    if bal is None or amt is None or typ not in ("credit", "debit"):
-        return None
-    return round(bal - amt, 2) if typ == "credit" else round(bal + amt, 2)
-
-
-def _closing_from_rows(txs):
-    """
-    Last statement balance in the rows, if present.
-    """
-    if not txs:
-        return None
-    last = txs[-1]
-    return _val(last.get("balance_after_statement"))
-
-
-def validate_statement_json(data: dict) -> dict:
-    import math
-
-    ABS_TOL = 0.01
-
-    def _num(x):
-        return None if x is None else float(x)
+    txs = sec.get("transactions", []) or []
 
     def _val(node):
-        return None if not node else _num(node.get("value"))
-
-    def _fmt(x):
-        return "None" if x is None else f"{float(x):.2f}"
-
-    def _cmp(a, b):
-        if a is None or b is None:
-            return None, None
-        d = round(float(b) - float(a), 2)
-        return d, math.isclose(float(a), float(b), abs_tol=ABS_TOL)
-
-    def _opening_from_rows(txs):
-        if not txs:
+        if node is None:
             return None
+        if isinstance(node, (int, float)):
+            return float(node)
+        if isinstance(node, dict):
+            return _num(node.get("value"))
+        return None
+
+    # derive tx sums
+    in_tx, out_tx = _tx_sums(txs)
+
+    # derive opening from rows if balance_after_statement & amount exist on the first tx
+    opening_tx = None
+    if txs:
         first = txs[0]
-        bal = _val(first.get("balance_after_statement"))
-        amt = _num(first.get("amount", {}).get("value"))
+        bal = (first.get("amount_after_statement") or first.get("balance_after_statement") or {}).get("value")
+        amt_node = first.get("amount")
+        if isinstance(amt_node, dict):
+            amt = _num(amt_node.get("value"))
+        else:
+            amt = _num(amt_node)
         typ = first.get("transaction_type")
-        if bal is None or amt is None or typ not in ("credit", "debit"):
-            return None
-        return round(bal - amt, 2) if typ == "credit" else round(bal + amt, 2)
+        if bal is not None and amt is not None and typ in ("credit", "debit"):
+            opening_tx = round(float(bal) - float(amt), 2) if typ == "credit" else round(float(bal) + float(amt), 2)
 
-    def _closing_from_rows(txs):
-        if not txs:
-            return None
+    closing_stmt_tx = None
+    if txs:
         last = txs[-1]
-        return _val(last.get("balance_after_statement"))
+        closing_stmt_tx = (last.get("amount_after_statement") or last.get("balance_after_statement") or {}).get("value")
+        closing_stmt_tx = _num(closing_stmt_tx)
 
-    print(f"\n=== VALIDATION for: {data.get('file_name')} ===")
-    report = {"file_name": data.get("file_name"), "currencies": {}, "ok": True}
-    currencies = data.get("currencies", {}) or {}
+    # map legacy fields to strict leaves
+    strict = deepcopy(STRICT_BALANCES_TEMPLATE)
+    strict["opening_balance"]["transactions_table"] = opening_tx
+    strict["money_in_total"]["transactions_table"]  = in_tx
+    strict["money_out_total"]["transactions_table"] = out_tx
+    strict["closing_balance"]["transactions_table"] = closing_stmt_tx
 
+    # legacy statement/summary closings (if present)
+    strict["closing_balance"]["summary_table"] = _val(sec.get("closing_balance_statement"))
+    strict["closing_balance"]["calculated"]    = _val(sec.get("closing_balance_calculated"))
+
+    # If legacy had bare numbers at top-level, treat them as transactions_table:
+    ob_legacy  = _val(sec.get("opening_balance"))
+    mi_legacy  = _val(sec.get("money_in_total"))
+    mo_legacy  = _val(sec.get("money_out_total"))
+    if strict["opening_balance"]["transactions_table"] is None and ob_legacy is not None:
+        strict["opening_balance"]["transactions_table"] = ob_legacy
+    if mi_legacy is not None:
+        strict["money_in_total"]["transactions_table"] = mi_legacy
+    if mo_legacy is not None:
+        strict["money_out_total"]["transactions_table"] = mo_legacy
+
+    return strict
+
+
+def _enforce_currency_section(cur_section: dict) -> dict:
+    """
+    Return a new currency section that definitely has:
+      - balances (strict shape)
+      - transactions list
+    """
+    sec = deepcopy(cur_section or {})
+    txs = sec.get("transactions", []) or []
+    if "transactions" not in sec:
+        sec["transactions"] = txs
+
+    if "balances" in sec and isinstance(sec["balances"], dict):
+        sec["balances"] = _ensure_balances_shape(sec["balances"])
+    elif COERCE_LEGACY:
+        sec["balances"] = _coerce_legacy_currency_section(sec)
+    else:
+        sec["balances"] = deepcopy(STRICT_BALANCES_TEMPLATE)
+
+    return sec
+
+
+def _enforce_statement(stmt: dict) -> dict:
+    """
+    Ensure every currency under stmt['currencies'] conforms to strict schema.
+    Returns a deep-copied, normalized statement dict.
+    """
+    s = deepcopy(stmt or {})
+    curr = s.get("currencies", {}) or {}
+    for k in list(curr.keys()):
+        curr[k] = _enforce_currency_section(curr[k])
+    s["currencies"] = curr
+    return s
+
+
+# ----------------------------
+# Per-statement validation
+# ----------------------------
+def validate_single_statement(statement: dict) -> dict:
+    """
+    Enforce schema (optionally coercing legacy), then validate ONE statement node.
+    Prints a readable report and returns a structured dict.
+    """
+    s = _enforce_statement(statement)
+
+    ident = s.get("file_name") or s.get("statement_id") or "<unnamed>"
+    inst  = s.get("institution")
+    iban  = s.get("iban")
+    acct  = s.get("account_type")
+    print(f"\n=== VALIDATION (balances) for: {ident} ===")
+    if inst or iban or acct:
+        extra = " | ".join(x for x in [inst, iban, acct] if x)
+        if extra:
+            print(extra)
+
+    report = {
+        "file_name": s.get("file_name"),
+        "statement_id": s.get("statement_id"),
+        "institution": inst,
+        "iban": iban,
+        "account_type": acct,
+        "statement_start_date": s.get("statement_start_date"),
+        "statement_end_date": s.get("statement_end_date"),
+        "currencies": {},
+        "ok": True,
+    }
+
+    currencies = s.get("currencies", {}) or {}
     for cur in sorted(currencies.keys()):
-        sec = currencies[cur]
+        sec = currencies[cur] or {}
         txs = sec.get("transactions", []) or []
         n = len(txs)
 
-        opening_s = _val(sec.get("opening_balance"))
-        in_s      = _val(sec.get("money_in_total"))
-        out_s     = _val(sec.get("money_out_total"))
-        closing_s = _val(sec.get("closing_balance_statement"))
+        b = sec.get("balances", {}) or {}
+        ob = b.get("opening_balance", {}) or {}
+        mi = b.get("money_in_total", {}) or {}
+        mo = b.get("money_out_total", {}) or {}
+        cb = b.get("closing_balance", {}) or {}
 
-        in_tx  = round(sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "credit"), 2)
-        out_tx = round(sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "debit"), 2)
+        open_sum = _num(ob.get("summary_table"))
+        open_tx  = _num(ob.get("transactions_table"))
 
-        opening_from_summary = (
-            None if (closing_s is None or in_s is None or out_s is None)
-            else round(closing_s - in_s + out_s, 2)
-        )
-        closing_from_tx = None if opening_s is None else round(opening_s + in_tx - out_tx, 2)
+        in_sum   = _num(mi.get("summary_table"))
+        in_tx_t  = _num(mi.get("transactions_table"))
 
-        opening_rows = _opening_from_rows(txs)
-        closing_rows = _closing_from_rows(txs)
-        closing_from_tx_rows = None if opening_rows is None else round(opening_rows + in_tx - out_tx, 2)
+        out_sum  = _num(mo.get("summary_table"))
+        out_tx_t = _num(mo.get("transactions_table"))
 
-        # NEW: consider "summary present" if opening+totals exist, regardless of closing_s
-        has_summary = all(v is not None for v in (opening_s, in_s, out_s))
+        close_sum  = _num(cb.get("summary_table"))
+        close_tx   = _num(cb.get("transactions_table"))
+        close_calc = _num(cb.get("calculated"))
+
+        # True tx sums (from amounts)
+        in_tx, out_tx = _tx_sums(txs)
 
         print(f"\n{cur} ({n} transactions)")
 
-        if has_summary:
-            # Compare summary totals to tx sums
-            d_out, ok_out = _cmp(out_s, out_tx)
-            d_in,  ok_in  = _cmp(in_s, in_tx)
-
-            # Opening check only if closing_s exists (since it uses closing_s)
-            if opening_from_summary is None:
-                print(f"  ⚪ Opening:       summary {_fmt(opening_s)}  → cannot derive from (closing − in + out)")
-                ok_open = True  # don't penalize
-                d_open = None
-            else:
-                d_open, ok_open = _cmp(opening_s, opening_from_summary)
-                print(f"  {'✅' if ok_open else '❌'} Opening:       summary {_fmt(opening_s)}  vs  calculated-from-summary {_fmt(opening_from_summary)}  Δ {_fmt(d_open)}")
-
-            # Money out / in vs tx
-            print(f"  {'✅' if ok_out else '❌'} Money out:     summary {_fmt(out_s)}  vs  transactions-sum {_fmt(out_tx)}  Δ {_fmt(d_out)}")
-            print(f"  {'✅' if ok_in  else '❌'} Money in:      summary {_fmt(in_s)}  vs  transactions-sum {_fmt(in_tx)}  Δ {_fmt(d_in)}")
-
-            # Closing: always show calculated-from-transactions; compare to closing_s if present
-            if closing_from_tx is None:
-                print(f"  ⚪ Closing:       summary {_fmt(closing_s)}  → cannot derive from (opening + in(tx) − out(tx))")
-                ok_close = True
-                d_close = None
-            else:
-                if closing_s is None:
-                    print(f"  ⚪ Closing:       summary None  vs  calculated-from-transactions {_fmt(closing_from_tx)}  Δ N/A")
-                    ok_close = True
-                    d_close = None
-                else:
-                    d_close, ok_close = _cmp(closing_s, closing_from_tx)
-                    print(f"  {'✅' if ok_close else '❌'} Closing:       summary {_fmt(closing_s)}  vs  calculated-from-transactions {_fmt(closing_from_tx)}  Δ {_fmt(d_close)}")
-                    # Optional: flag obviously broken OCR closings
-                    if ok_close is False and abs(d_close) >= 1000:
-                        print("  🔶 Note: closing balance looks suspiciously far from the transactions-derived closing. "
-                              "Parser may have dropped digits or mis-read the final balance cell.")
-
-            cur_ok = all([
-                ok_out if ok_out is not None else True,
-                ok_in  if ok_in  is not None else True,
-                ok_open if opening_from_summary is not None else True,
-                ok_close if d_close is not None else True,
-            ])
-
-            report["currencies"][cur] = {
-                "mode": "revolut",
-                "transactions": n,
-                "summary": {"opening": opening_s, "in": in_s, "out": out_s, "closing": closing_s},
-                "tx_sums": {"in": in_tx, "out": out_tx},
-                "derived": {"opening_from_summary": opening_from_summary, "closing_from_tx": closing_from_tx},
-                "deltas": {"opening": d_open, "in": d_in, "out": d_out, "closing": d_close},
-                "ok": cur_ok,
-            }
-            report["ok"] = report["ok"] and cur_ok
-
+        # Opening
+        if open_sum is None and open_tx is None:
+            print("  ✅ Opening: no summary table and no transactions-table opening (acceptable).")
         else:
-            # Original BOI-style branch unchanged
-            print(f"  ⚪ Opening:       opening balance {_fmt(opening_rows) if opening_rows is not None else 'N/A'}")
-            print(f"  ⚪ Money out:     transactions-sum {_fmt(out_tx)}")
-            print(f"  ⚪ Money in:      transactions-sum {_fmt(in_tx)}")
-
-            if closing_rows is None and closing_from_tx_rows is None:
-                print(f"  ⚪ Closing:       N/A  → cannot derive from rows")
-                ok_close = None
-                d_close = None
-            elif closing_rows is None:
-                print(f"  ⚪ Closing:       closing balance None  vs  calculated-from-transactions {_fmt(closing_from_tx_rows)}  Δ N/A")
-                ok_close = None
-                d_close = None
-            elif closing_from_tx_rows is None:
-                print(f"  ⚪ Closing:       closing balance {_fmt(closing_rows)}  → cannot derive from rows")
-                ok_close = None
-                d_close = None
+            if open_sum is not None and open_tx is not None:
+                d_open, ok_open = _cmp(open_sum, open_tx)
+                print(f"  {'✅' if ok_open else 'ℹ️'} Opening: summary_table {_fmt(open_sum)} vs transactions_table {_fmt(open_tx)}  Δ {_fmt(d_open)}")
+            elif open_sum is not None:
+                print(f"  ✅ Opening: summary_table {_fmt(open_sum)}")
             else:
-                d_close, ok_close = _cmp(closing_rows, closing_from_tx_rows)
-                print(f"  {'✅' if ok_close else '❌'} Closing:       closing balance {_fmt(closing_rows)}  vs  calculated-from-transactions {_fmt(closing_from_tx_rows)}  Δ {_fmt(d_close)}")
+                print(f"  ✅ Opening: transactions_table {_fmt(open_tx)}")
 
-            cur_ok = True if ok_close in (True, None) else False
+        # Money out / in — compare tx totals vs transactions_table (ground truth if present)
+        d_out_tx, ok_out_tx = _cmp(out_tx, out_tx_t if out_tx_t is not None else out_tx)
+        d_in_tx,  ok_in_tx  = _cmp(in_tx,  in_tx_t  if in_tx_t  is not None else in_tx)
 
-            report["currencies"][cur] = {
-                "mode": "boi",
-                "transactions": n,
-                "summary": {"opening": opening_s, "in": in_s, "out": out_s, "closing": closing_s},
-                "rows": {"opening_from_rows": opening_rows, "closing_from_rows": closing_rows},
-                "tx_sums": {"in": in_tx, "out": out_tx},
-                "derived": {"closing_from_tx_rows": closing_from_tx_rows},
-                "deltas": {"closing": d_close},
-                "ok": cur_ok,
-            }
-            report["ok"] = report["ok"] and cur_ok
+        print(f"  {'✅' if ok_out_tx else '❌'} Money out: transactions_table {_fmt(out_tx_t)} vs tx-sum {_fmt(out_tx)}  Δ {_fmt(d_out_tx)}")
+        if out_sum is None:
+            print(f"  ✅ Money out: no summary table")
+        else:
+            d_out_sum, _ = _cmp(out_sum, out_tx)
+            print(f"  ℹ️  Money out: summary_table {_fmt(out_sum)} vs tx-sum {_fmt(out_tx)}  Δ {_fmt(d_out_sum)}")
+
+        print(f"  {'✅' if ok_in_tx else '❌'} Money in:  transactions_table {_fmt(in_tx_t)} vs tx-sum {_fmt(in_tx)}   Δ {_fmt(d_in_tx)}")
+        if in_sum is None:
+            print(f"  ✅ Money in:  no summary table")
+        else:
+            d_in_sum, _ = _cmp(in_sum, in_tx)
+            print(f"  ℹ️  Money in:  summary_table {_fmt(in_sum)} vs tx-sum {_fmt(in_tx)}   Δ {_fmt(d_in_sum)}")
+
+        # Optional signed_amount checks
+        signed_total = _signed_sum(txs)
+        signed_ok = None
+        if signed_total is not None:
+            # sign consistency and absolute-magnitude consistency
+            sign_mismatch = 0
+            abs_mismatch = 0
+            for t in txs:
+                if "signed_amount" not in t:
+                    continue
+                sa = _signed_amount(t)
+                amt = _tx_amount(t)
+                typ = t.get("transaction_type")
+                if sa is None or amt is None or typ not in ("credit", "debit"):
+                    continue
+                expected_sign = 1 if typ == "credit" else -1
+                if expected_sign * 1.0 * amt is None:
+                    continue
+                # sign check
+                if (sa > 0 and typ == "debit") or (sa < 0 and typ == "credit"):
+                    sign_mismatch += 1
+                # magnitude check
+                if not math.isclose(abs(sa), float(amt), abs_tol=ABS_TOL):
+                    abs_mismatch += 1
+
+            net_expected = round(in_tx - out_tx, 2)
+            d_signed, ok_signed_net = _cmp(net_expected, signed_total)
+            signed_ok = (sign_mismatch == 0 and abs_mismatch == 0 and (ok_signed_net is True))
+
+            print(f"  {'✅' if signed_ok else '❌'} Signed amounts: "
+                  f"net {_fmt(signed_total)} vs (in - out) {_fmt(net_expected)}  Δ {_fmt(d_signed)}; "
+                  f"sign mismatches={sign_mismatch}, abs mismatches={abs_mismatch}")
+
+        # Closing
+        calc_from_tx = None
+        if open_tx is not None:
+            calc_from_tx = round(open_tx + in_tx - out_tx, 2)
+        elif open_sum is not None:
+            calc_from_tx = round(open_sum + in_tx - out_tx, 2)
+
+        any_close_info = False
+        if close_calc is not None and calc_from_tx is not None:
+            d_close_calc, ok_close_calc = _cmp(close_calc, calc_from_tx)
+            print(f"  {'✅' if ok_close_calc else '❌'} Closing (calculated): model {_fmt(close_calc)} vs derived-from-tx {_fmt(calc_from_tx)}  Δ {_fmt(d_close_calc)}")
+            any_close_info = True
+
+        if close_sum is not None and calc_from_tx is not None:
+            d_close_sum, ok_close_sum = _cmp(close_sum, calc_from_tx)
+            print(f"  {'✅' if ok_close_sum else '❌'} Closing (summary_table): {_fmt(close_sum)} vs derived-from-tx {_fmt(calc_from_tx)}  Δ {_fmt(d_close_sum)}")
+            any_close_info = True
+
+        if close_tx is not None and calc_from_tx is not None:
+            d_close_tx, ok_close_tx = _cmp(close_tx, calc_from_tx)
+            print(f"  {'✅' if ok_close_tx else '❌'} Closing (transactions_table): {_fmt(close_tx)} vs derived-from-tx {_fmt(calc_from_tx)}  Δ {_fmt(d_close_tx)}")
+            any_close_info = True
+
+        if not any_close_info:
+            print("  ⚪ Closing: missing values")
+
+        # overall ok (require tx totals to match; include signed check if present)
+        cur_ok = not ((ok_out_tx is False) or (ok_in_tx is False))
+        if signed_ok is False:
+            cur_ok = False
+
+        report["ok"] = report["ok"] and cur_ok
+        report["currencies"][cur] = {
+            "transactions": n,
+            "balances": sec.get("balances"),
+            "tx_sums": {"in": in_tx, "out": out_tx, "signed_net": signed_total},
+            "ok": cur_ok,
+        }
 
     return report
+
+
+# ----------------------------
+# Bundle-level validation
+# ----------------------------
+def validate_single_client_bundle(bundle: dict) -> dict:
+    """
+    Validate a legacy single-client bundle:
+      { "schema_version": "...", "client": "...", "statements": [ <statement> ... ] }
+    """
+    stmts = bundle.get("statements", []) or []
+    client = bundle.get("client")
+    if client:
+        print(f"\n### CLIENT: {client}")
+
+    overall_ok = True
+    per_statement_reports: List[dict] = []
+
+    for stmt in stmts:
+        rep = validate_single_statement(stmt)
+        per_statement_reports.append(rep)
+        overall_ok = overall_ok and bool(rep.get("ok", False))
+
+    return {
+        "client": client,
+        "schema_version": bundle.get("schema_version"),
+        "ok": overall_ok,
+        "statements": per_statement_reports,
+    }
+
+
+def validate_clients_bundle(bundle: dict) -> dict:
+    """
+    Validate the new multi-client bundle:
+      {
+        "schema_version": "...",
+        "clients": [
+          {"name": "...", "statements": [ <statement> ... ]},
+          ...
+        ]
+      }
+    """
+    clients = bundle.get("clients", []) or []
+    print("\n### VALIDATING MULTI-CLIENT BUNDLE")
+    overall_ok = True
+    client_reports: List[dict] = []
+
+    for c in clients:
+        name = c.get("name") or "<unnamed>"
+        print(f"\n#### CLIENT: {name}")
+        stmts = c.get("statements", []) or []
+
+        per_statement_reports: List[dict] = []
+        client_ok = True
+        for stmt in stmts:
+            rep = validate_single_statement(stmt)
+            per_statement_reports.append(rep)
+            client_ok = client_ok and bool(rep.get("ok", False))
+
+        overall_ok = overall_ok and client_ok
+        client_reports.append({
+            "name": name,
+            "ok": client_ok,
+            "statements": per_statement_reports,
+        })
+
+    return {
+        "schema_version": bundle.get("schema_version"),
+        "ok": overall_ok,
+        "clients": client_reports,
+    }
+
+
+# ----------------------------
+# Auto-detect entrypoint
+# ----------------------------
+def validate(data: dict) -> dict:
+    """
+    Convenience entrypoint:
+      - If 'clients' is present -> multi-client bundle
+      - Else if 'statements' is present -> legacy single-client bundle
+      - Else -> single-statement mode
+    """
+    if isinstance(data, dict) and "clients" in data:
+        return validate_clients_bundle(data)
+    if isinstance(data, dict) and "statements" in data:
+        print(f"\n### VALIDATING SINGLE-CLIENT BUNDLE")
+        return validate_single_client_bundle(data)
+    print(f"\n### VALIDATING SINGLE STATEMENT")
+    return validate_single_statement(data)
