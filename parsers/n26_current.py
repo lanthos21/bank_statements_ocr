@@ -496,8 +496,6 @@ def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = 
     full_text = "\n".join("\n".join((ln.get("line_text") or "") for ln in pg.get("lines", [])) for pg in pages)
     m_iban = re.search(r"\bIBAN[:\s]+([A-Z]{2}\d{2}[A-Z0-9]{11,30})\b", full_text, re.IGNORECASE)
     iban = m_iban.group(1).replace(" ", "") if m_iban else None
-    m_bic = re.search(r"\bBIC[:\s]+([A-Z0-9]{8,11})\b", full_text, re.IGNORECASE)
-    bic = m_bic.group(1) if m_bic else None
 
     def _infer(page, prev):
         cur = page.get("currency")
@@ -538,9 +536,7 @@ def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = 
         "file_name": raw_ocr.get("file_name"),
         "institution": "N26",
         "account_type": account_type,
-        "account_holder": None,
         "iban": iban,
-        "bic": bic,
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
