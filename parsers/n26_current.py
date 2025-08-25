@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple, Any
@@ -360,7 +361,6 @@ def _amount_to_number(a: str) -> Optional[float]:
 
 # ---------------- transactions ----------------
 def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[dict]:
-    currency = _infer_currency_from_iban(iban, "EUR")
     out: List[dict] = []
     seq = 0
 
@@ -398,26 +398,27 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
 
             out.append({
                 "seq": seq,
-                "transactions_date": iso_date,
+                "transaction_date": iso_date,
                 "transaction_type": "credit" if float(val) > 0 else "debit",
                 "description": desc,
                 "amount": abs(float(val)),
+                "signed_amount": float(val),  # original sign from source
             })
+
             seq += 1
 
     out.sort(key=lambda t: t.get("seq", 0))
     return out
 
 # ---------------- buckets & balances builder (STRICT SHAPE) ----------------
-def _group_by_currency(transactions: List[dict]) -> Dict[str, List[dict]]:
-    buckets: Dict[str, List[dict]] = defaultdict(list)
-    for t in transactions:
-        cur = (t.get("amount") or {}).get("currency")
-        if cur:
-            buckets[cur].append(t)
-    for cur in buckets:
-        buckets[cur].sort(key=lambda t: t.get("seq", 0))
-    return buckets
+def _group_by_currency(transactions: List[dict], iban: Optional[str]) -> Dict[str, List[dict]]:
+    """
+    N26 transactions now have amount as a float (no per-row currency).
+    Bucket all rows under the statement currency inferred from IBAN.
+    """
+    cur = _infer_currency_from_iban(iban, "EUR")
+    return {cur: sorted(transactions, key=lambda t: t.get("seq", 0))}
+
 
 def _num(x):
     try:
@@ -427,12 +428,9 @@ def _num(x):
 
 def build_currency_sections_balances(buckets: Dict[str, List[dict]], summaries: Dict[str, dict]) -> Dict[str, Any]:
     """
-    Enforce:
-      balances.opening_balance      {summary_table, transactions_table}
-      balances.money_in_total       {summary_table, transactions_table}
-      balances.money_out_total      {summary_table, transactions_table}
-      balances.closing_balance      {summary_table, transactions_table, calculated}
-    N26: no per-row balance → transactions_table (opening/closing) = None
+    Balances leaf shape:
+      opening_balance / money_in_total / money_out_total / closing_balance
+    Transactions now carry amount as a float (no currency dict).
     """
     out: Dict[str, Any] = {}
     all_curs = set(buckets.keys()) | set(summaries.keys())
@@ -440,14 +438,19 @@ def build_currency_sections_balances(buckets: Dict[str, List[dict]], summaries: 
     for cur in sorted(all_curs):
         txs = buckets.get(cur, [])
 
-        # transactions-side
-        tx_in  = round(sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "credit"), 2)
-        tx_out = round(sum(float(t["amount"]["value"]) for t in txs if t.get("transaction_type") == "debit"), 2)
-        tx_opening = None            # N26 rows have no balance column
-        tx_closing_stmt = None       # idem
+        # transactions-side totals (float amounts)
+        tx_in  = round(sum(float(t["amount"]) for t in txs if t.get("transaction_type") == "credit"), 2)
+        tx_out = round(sum(float(t["amount"]) for t in txs if t.get("transaction_type") == "debit"), 2)
+        tx_opening = None            # N26: no running balance column in rows
+        tx_closing_stmt = None       # N26: idem
 
         # summary-side (summed across pages/pockets)
-        s = summaries.get(cur, {}) or {}
+        s = (summaries.get(cur) or {})
+        def _num(x):
+            try:
+                return None if x is None else float(x)
+            except Exception:
+                return None
         sum_open  = _num(s.get("previous"))
         sum_out   = _num(s.get("out"))
         sum_in    = _num(s.get("in"))
@@ -461,7 +464,7 @@ def build_currency_sections_balances(buckets: Dict[str, List[dict]], summaries: 
             "balances": {
                 "opening_balance": {
                     "summary_table":      sum_open,
-                    "transactions_table": tx_opening,       # None
+                    "transactions_table": tx_opening,
                 },
                 "money_in_total": {
                     "summary_table":      sum_in,
@@ -473,7 +476,7 @@ def build_currency_sections_balances(buckets: Dict[str, List[dict]], summaries: 
                 },
                 "closing_balance": {
                     "summary_table":      sum_close,
-                    "transactions_table": tx_closing_stmt,  # None
+                    "transactions_table": tx_closing_stmt,
                     "calculated":         calculated,
                 },
             },
@@ -482,9 +485,10 @@ def build_currency_sections_balances(buckets: Dict[str, List[dict]], summaries: 
     return out
 
 # ---------------- public entrypoint ----------------
-def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unknown"):
+def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = "Unknown", debug: bool = True) -> dict:
     """
-    Build unified JSON with strict balances leaf shape.
+    Returns a single 'statement node' (no top-level 'client'), aligned with AIB/BOI.
+    Main can call this repeatedly across banks and bundle the nodes together.
     """
     pages = raw_ocr.get("pages", []) or []
 
@@ -505,11 +509,11 @@ def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unkno
             if u.startswith("IE"): return "EUR"
         return prev or _infer_currency_from_iban(iban, "EUR")
 
-    # 1) rows
+    # 1) transactions
     transactions = parse_transactions(pages, iban=iban)
 
-    # 2) group rows
-    buckets = _group_by_currency(transactions)
+    # 2) group by currency (expects amount={'value', 'currency'} in each tx)
+    buckets = _group_by_currency(transactions, iban)
 
     # 3) summary totals across pages/pockets
     summaries = collect_n26_summary_tables_all(pages, _infer, debug=False)  # {CUR: {previous,out,in,new}}
@@ -519,18 +523,22 @@ def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unkno
 
     # 5) statement date range from rows
     if transactions:
-        all_dates = [t.get("transactions_date") for t in transactions if t.get("transactions_date")]
+        all_dates = [t.get("transaction_date") for t in transactions if t.get("transaction_date")]
         start_date = min(all_dates) if all_dates else None
         end_date   = max(all_dates) if all_dates else None
     else:
         start_date = end_date = None
 
+    # Optional lightweight statement_id (matches AIB/BOI scheme)
+    sid_basis = f"{raw_ocr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
+    statement_id = hashlib.sha1(sid_basis.encode("utf-8")).hexdigest()[:12] if sid_basis.strip("|") else None
+
     return {
-        "client": client,
+        "statement_id": statement_id,
         "file_name": raw_ocr.get("file_name"),
-        "account_holder": None,
         "institution": "N26",
         "account_type": account_type,
+        "account_holder": None,
         "iban": iban,
         "bic": bic,
         "statement_start_date": start_date,

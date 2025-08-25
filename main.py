@@ -87,9 +87,10 @@ def main():
         r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 01 august 2025-3641.pdf",
     ]
     pdf_paths = [
-        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\downloadStatement v2.pdf",
+        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut euro with pockets.pdf",
         r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 july 2025-3482.pdf",
         r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf",
+        r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency.pdf",
     ]
     client = "Client 1"
     bundle = {

@@ -1,6 +1,6 @@
 # aib.py
 # AIB parser → multi-statement bundle (single statement for now)
-# - Keeps transactions simple: {seq, transactions_date, transaction_type, description, amount}
+# - Keeps transactions simple: {seq, transaction_date, transaction_type, description, amount}
 # - Statement node contains: institution, account_type, account_holder, iban, bic,
 #   statement_start_date, statement_end_date, currencies{...}
 # - Top-level bundle: { schema_version, client, statements: [ <statement> ] }
@@ -327,11 +327,13 @@ def parse_transactions(pages: list[dict], iban: str | None = None) -> list[dict]
 
             all_transactions.append({
                 "seq": seq,
-                "transactions_date": last_seen_date,
+                "transaction_date": last_seen_date,
                 "transaction_type": "credit" if credit > 0 else "debit",
                 "description": clean_desc,
-                "amount": credit if credit > 0 else debit,
+                "amount": credit if credit > 0 else debit,  # always positive
+                "signed_amount": (credit if credit > 0 else -debit),  # + for credit, - for debit
             })
+
             seq += 1
 
     return all_transactions
@@ -409,7 +411,7 @@ def _make_statement_node(raw_ocr: dict, client: str, account_type: str, debug: b
 
     # Statement date range
     if transactions:
-        all_dates = [t["transactions_date"] for t in transactions if t["transactions_date"]]
+        all_dates = [t["transaction_date"] for t in transactions if t["transaction_date"]]
         start_date = start_date or (min(all_dates) if all_dates else None)
         end_date   = max(all_dates) if all_dates else None
     else:

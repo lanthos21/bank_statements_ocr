@@ -1,3 +1,4 @@
+import hashlib
 import re
 import math
 from collections import defaultdict
@@ -230,15 +231,13 @@ def _num_or_none(x):
     return None if math.isnan(v) else v
 
 
-def group_transactions_by_currency(transactions: List[dict]) -> Dict[str, List[dict]]:
-    buckets: Dict[str, List[dict]] = defaultdict(list)
-    for tx in transactions:
-        cur = tx.get("amount", {}).get("currency")
-        if cur:
-            buckets[cur].append(tx)
-    for cur in buckets:
-        buckets[cur].sort(key=lambda t: t.get("seq", 0))
-    return buckets
+def group_transactions_by_currency(transactions: List[dict], iban: Optional[str]) -> Dict[str, List[dict]]:
+    """
+    With per-row amounts now plain floats (no embedded currency),
+    bucket all rows under the statement currency inferred from IBAN.
+    """
+    cur = "GBP" if (iban and iban.upper().startswith("GB")) else "EUR"
+    return {cur: sorted(transactions, key=lambda t: t.get("seq", 0))}
 
 
 def _simple_totals_from_total_line(line: dict) -> dict | None:
@@ -367,19 +366,7 @@ def build_currency_sections_balances(
     summaries: Dict[str, dict],
 ) -> Dict[str, Any]:
     """
-    New strict schema:
-
-    currencies: {
-      <CUR>: {
-        balances: {
-          opening_balance: { summary_table: float|None, transactions_table: float|None },
-          money_in_total:  { summary_table: float|None, transactions_table: float },
-          money_out_total: { summary_table: float|None, transactions_table: float },
-          closing_balance: { summary_table: float|None, transactions_table: float|None, calculated: float|None }
-        },
-        transactions: [...]
-      }
-    }
+    Strict balances schema with float amounts in tx rows (no per-row currency).
     """
     out: Dict[str, Any] = {}
 
@@ -387,26 +374,20 @@ def build_currency_sections_balances(
     for cur in sorted(all_currencies):
         txs = buckets.get(cur, [])
 
-        # --- Transactions-side figures (we no longer have per-row balances) ---
-        tx_money_in  = round(sum(float(t["amount"]["value"]) for t in txs
-                                 if t.get("transaction_type") == "credit"), 2)
-        tx_money_out = round(sum(float(t["amount"]["value"]) for t in txs
-                                 if t.get("transaction_type") == "debit"), 2)
+        # Transactions-side figures (float amounts)
+        tx_money_in  = round(sum(float(t["amount"]) for t in txs if t.get("transaction_type") == "credit"), 2)
+        tx_money_out = round(sum(float(t["amount"]) for t in txs if t.get("transaction_type") == "debit"), 2)
 
-        # No tx_opening / tx_closing_stmt without a balance column
-        tx_opening = None
-        tx_closing_stmt = None
+        tx_opening = None           # no per-row balance column
+        tx_closing_stmt = None      # idem
 
-        # --- Summary-table figures (from detected totals per currency) ---
+        # Summary-table figures (from detected totals per currency)
         s = summaries.get(cur, {}) or {}
         sum_opening = _num_or_none(s.get("opening"))
         sum_out     = _num_or_none(s.get("out"))
         sum_in      = _num_or_none(s.get("in"))
         sum_closing = _num_or_none(s.get("closing"))
 
-        # --- Calculated closing ---
-        # Prefer a transactions-side calculation if we ever add tx_opening back.
-        # For now (no per-row balances), use summary side when fully available.
         calculated = None
         if (sum_opening is not None) and (sum_in is not None) and (sum_out is not None):
             calculated = round(sum_opening + sum_in - sum_out, 2)
@@ -415,7 +396,7 @@ def build_currency_sections_balances(
             "balances": {
                 "opening_balance": {
                     "summary_table":      sum_opening,
-                    "transactions_table": tx_opening,      # stays None (no per-row balances)
+                    "transactions_table": tx_opening,
                 },
                 "money_in_total": {
                     "summary_table":      sum_in,
@@ -427,7 +408,7 @@ def build_currency_sections_balances(
                 },
                 "closing_balance": {
                     "summary_table":      sum_closing,
-                    "transactions_table": tx_closing_stmt, # stays None (no per-row balances)
+                    "transactions_table": tx_closing_stmt,
                     "calculated":         calculated,
                 },
             },
@@ -519,30 +500,31 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
 
             all_transactions.append({
                 "seq": seq,
-                "transactions_date": transaction_date,
+                "transaction_date": transaction_date,
                 "transaction_type": "credit" if credit_amount > 0 else "debit",
                 "description": clean_desc,
                 "amount": credit_amount if credit_amount > 0 else debit_amount,
+                "signed_amount": (credit_amount if credit_amount > 0 else -debit_amount),
             })
+
             seq += 1
 
     return all_transactions
 
 
-def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unknown"):
+def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unknown") -> dict:
     # Flat text for IBAN extraction
     full_text = "\n".join("\n".join(line.get("line_text", "") for line in page.get("lines", []))
                           for page in raw_ocr.get("pages", []))
+    m = re.search(r"IBAN\s+([A-Z]{2}\d{2}[A-Z0-9]{11,30})", full_text)
+    iban = m.group(1).strip() if m else None
 
-    iban_match = re.search(r"IBAN\s+([A-Z]{2}\d{2}[A-Z0-9]{11,30})", full_text)
-    iban = iban_match.group(1).strip() if iban_match else None
+    pages = raw_ocr.get("pages", []) or []
 
-    pages = raw_ocr.get("pages", [])
-
-    # 1) parse transactions
+    # 1) parse transactions (already emit amount: float)
     transactions = parse_transactions(pages, iban=iban)
 
-    # 2) infer page currency logic for summaries
+    # 2) infer page currency logic for summaries (kept as-is)
     def _infer(page, prev):
         cur = page.get("currency")
         if isinstance(cur, str) and len(cur) == 3:
@@ -553,30 +535,34 @@ def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unkno
             if u.startswith("IE"): return "EUR"
         return prev or "EUR"
 
-    # 3) collect totals from "Total a b c d" rows aligned by columns
+    # 3) collect totals from “Total a b c d” rows
     summaries = collect_currency_summaries_from_totals(pages, _infer)
 
-    # 4) group and build per-currency sections
-    buckets = group_transactions_by_currency(transactions)
+    # 4) group rows into one currency bucket (by IBAN) and build balances
+    buckets = group_transactions_by_currency(transactions, iban)
     currencies = build_currency_sections_balances(buckets, summaries)
 
-    # 5) global dates from transactions (language-agnostic)
+    # 5) date range from rows
     if transactions:
-        all_dates = [t.get("transactions_date") for t in transactions if t.get("transactions_date")]
+        all_dates = [t.get("transaction_date") for t in transactions if t.get("transaction_date")]
         start_date = min(all_dates) if all_dates else None
-        end_date = max(all_dates) if all_dates else None
+        end_date   = max(all_dates) if all_dates else None
     else:
         start_date = end_date = None
 
+    # Optional statement_id (consistent with other providers)
+    sid_basis = f"{raw_ocr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
+    statement_id = hashlib.sha1(sid_basis.encode("utf-8")).hexdigest()[:12] if sid_basis.strip("|") else None
+
     return {
-        "client": client,
+        "statement_id": statement_id,
         "file_name": raw_ocr.get("file_name"),
-        "account_holder": None,
         "institution": "Revolut",
         "account_type": account_type,
+        "account_holder": None,
         "iban": iban,
         "bic": None,
         "statement_start_date": start_date,
         "statement_end_date": end_date,
-        "currencies": currencies
+        "currencies": currencies,
     }

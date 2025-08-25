@@ -15,7 +15,7 @@
 #         money_out_total: { summary_table: None, transactions_table: <float> },
 #         closing_balance: { summary_table: None, transactions_table: <float|None>, calculated: <float|None> }
 #       },
-#       transactions: [ { seq, transactions_date, transaction_type, description, amount } ... ]
+#       transactions: [ { seq, transaction_date, transaction_type, description, amount } ... ]
 #     }
 #   }
 
@@ -341,11 +341,13 @@ def parse_transactions(pages: list[dict], debug: bool = False) -> list[dict]:
 
             all_transactions.append({
                 "seq": seq,
-                "transactions_date": last_seen_date,
+                "transaction_date": last_seen_date,
                 "transaction_type": "credit" if credit > 0 else "debit",
                 "description": clean_desc,
                 "amount": credit if credit > 0 else debit,
+                "signed_amount": (credit if credit > 0 else -debit),
             })
+
             seq += 1
 
     return all_transactions
@@ -425,7 +427,7 @@ def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = 
 
     # Statement date span
     if transactions:
-        all_dates = [t.get("transactions_date") for t in transactions if t.get("transactions_date")]
+        all_dates = [t.get("transaction_date") for t in transactions if t.get("transaction_date")]
         start_date = start_date_open or (min(all_dates) if all_dates else None)
         end_date   = max(all_dates) if all_dates else None
     else:

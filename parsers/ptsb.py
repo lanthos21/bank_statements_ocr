@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from typing import Optional, Dict, List, Tuple, Any
 # --- put near your other imports ---
@@ -833,11 +834,13 @@ def parse_transactions_ptsb(
 
             all_transactions.append({
                 "seq": seq,
-                "transactions_date": row_date,
+                "transaction_date": row_date,
                 "transaction_type": tx_type,
                 "description": clean_desc,
                 "amount": amt_val,
+                "signed_amount": (amt_val if tx_type == "credit" else -amt_val),
             })
+
             seq += 1
 
             debug_rows.append({
@@ -921,7 +924,10 @@ def extract_iban(pages: list[dict]) -> str | None:
 # ---------------------------------
 # Public entrypoint
 # ---------------------------------
-def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bool = False):
+def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unknown", debug: bool = False) -> dict:
+    """
+    Returns a single 'statement node' (no top-level 'client'), aligned with AIB/BOI/N26.
+    """
     pages = raw_ocr.get("pages", []) or []
 
     iban = extract_iban(pages)
@@ -945,7 +951,7 @@ def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bo
 
     # Statement dates
     if transactions:
-        all_dates = [t.get("transactions_date") for t in transactions if t.get("transactions_date")]
+        all_dates = [t.get("transaction_date") for t in transactions if t.get("transaction_date")]
         start_date = min(all_dates) if all_dates else None
         end_date   = max(all_dates) if all_dates else None
     else:
@@ -965,12 +971,16 @@ def parse_statement(raw_ocr, client="Unknown", account_type="Unknown", debug: bo
         except Exception as e:
             print(f"⚠️ Failed to write ptsb_debug_rows.csv: {e}")
 
+    # Lightweight statement_id (same pattern as AIB/BOI/N26)
+    sid_basis = f"{raw_ocr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
+    statement_id = hashlib.sha1(sid_basis.encode("utf-8")).hexdigest()[:12] if sid_basis.strip("|") else None
+
     return {
-        "client": client,
+        "statement_id": statement_id,
         "file_name": raw_ocr.get("file_name"),
-        "account_holder": None,
         "institution": "PTSB",
         "account_type": account_type,
+        "account_holder": None,
         "iban": iban,
         "bic": None,
         "statement_start_date": start_date,
