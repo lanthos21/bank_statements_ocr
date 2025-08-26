@@ -1,79 +1,61 @@
 # main.py
 import json
 from pathlib import Path
-from typing import List, Dict, Any, Iterable, Tuple, Union
+from typing import  Dict, Any, Iterable, Tuple
 
 from extract.data_extract import extract_pdf_to_raw_data
 from mapping import OCR_SETTINGS, BANK_PARSERS
 from extract.detect_bank import detect_bank_provider
-from extract.audit import write_ocr_dump, save_ocr_words_csv, save_ocr_pretty_txt
 from utils import nuke_dir
-from validator import validate  # or: from validator import validate  (match your file name)
+from validator import validate
 
 
-def process_pdf(pdf_path: str, client: str, account_type: str, strategy: str) -> Dict[str, Any]:
+def process_pdf(
+    pdf_path: str,
+    client: str,
+    account_type: str,
+    strategy: str = "auto",   # "auto" | "native" | "ocr"
+    save_artifacts: bool = True,
+) -> Dict[str, Any]:
+    """Simplest possible single-PDF pipeline: detect -> extract -> parse -> (optional) save debug + JSON."""
     bank_code, conf, method = detect_bank_provider(pdf_path)
     if not bank_code:
-        raise RuntimeError("Could not auto-detect provider")
+        raise RuntimeError(f"Could not auto-detect provider for: {pdf_path}")
+    print(f"🏦 Detected: {bank_code} (conf {conf:.2f}, via {method}) - {pdf_path} | account_type={account_type}")
 
-    print(f"🏦 Detected: {bank_code} (conf {conf:.2f}, via {method}) - {pdf_path}  |  account_type={account_type}")
+    # ------------------------------
+    # extract data from the statement
+    # ------------------------------
+    profile = OCR_SETTINGS[bank_code]
+    raw = extract_pdf_to_raw_data(pdf_path, profile, bank_code=bank_code, strategy=strategy)
 
-    ocr_settings = OCR_SETTINGS[bank_code]
-    #raw = ocr_pdf_to_raw_data(pdf_path, ocr_settings, bank_code=bank_code)
-    raw = extract_pdf_to_raw_data(pdf_path, ocr_settings, bank_code=bank_code, strategy=strategy)
+    if save_artifacts:
+        audit_dir = Path("results_audit")
+        audit_dir.mkdir(parents=True, exist_ok=True)
+        # 1) plain text dump of extracted lines (replaces write_ocr_dump)
+        with open(audit_dir / (Path(pdf_path).stem + "_ocr_dump.txt"), "w", encoding="utf-8") as f:
+            for p in raw.get("pages", []):
+                f.write(f"\n=== Page {p.get('page_number')} ===\n")
+                for ln in p.get("lines", []):
+                    f.write((ln.get("line_text") or "") + "\n")
+        # 2) raw extract JSON
+        with open(audit_dir / (Path(pdf_path).stem + "_raw_extract.json"), "w", encoding="utf-8") as f:
+            json.dump(raw, f, ensure_ascii=False, indent=2)
 
-    write_ocr_dump(raw, pdf_path)
-
-    parser_func = BANK_PARSERS[bank_code]  # MUST return a statement node (dict with 'currencies')
-    stmt = parser_func(raw, client=client, account_type=account_type)
-
+    # ------------------------------
+    # parse the extracted data
+    # ------------------------------
+    parser = BANK_PARSERS[bank_code]
+    stmt = parser(raw, client=client, account_type=account_type)
     if not isinstance(stmt, dict) or "currencies" not in stmt:
-        raise ValueError(f"Parser for {bank_code} must return a statement node (dict with 'currencies').")
+        raise ValueError(f"Parser for {bank_code} must return a statement dict with 'currencies'.")
 
-    # Optional OCR artifacts
-    # save_ocr_words_csv(raw)
-    # save_ocr_pretty_txt(raw)
-
-    # Save per-file structured JSON (handy for debugging)
-    out_dir = Path("results_audit")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / (Path(pdf_path).stem + "_structured.json")
-    with open(out_file, "w", encoding="utf-8") as f:
-        json.dump(stmt, f, ensure_ascii=False, indent=2)
+    if save_artifacts:
+        audit_dir = Path("results_audit")
+        with open(audit_dir / (Path(pdf_path).stem + "_structured.json"), "w", encoding="utf-8") as f:
+            json.dump(stmt, f, ensure_ascii=False, indent=2)
 
     return stmt
-
-
-PDFEntry = Union[str, Tuple[str, str], Dict[str, Any]]  # str path | (path, account_type) | {"path":..., "account_type":...}
-
-def _iter_client_entries(cfg: Dict[str, Any]) -> Iterable[Tuple[str, str]]:
-    """
-    Yield (pdf_path, account_type) for a client's config.
-    Supports either:
-      - {"accounts": {"Current Account": [...], "Savings Account": [...], ...}}
-      - {"account_type": "...", "pdfs": [ <PDFEntry>, ... ]}
-        where each PDFEntry can be:
-          * "C:\\file.pdf"                            -> uses client default account_type
-          * {"path": "C:\\file.pdf", "account_type": "Savings Account"}
-          * ("C:\\file.pdf", "Savings Account")
-    """
-    if "accounts" in cfg and isinstance(cfg["accounts"], dict):
-        for acct_type, pdfs in cfg["accounts"].items():
-            for p in (pdfs or []):
-                yield str(p), str(acct_type)
-        return
-
-    default_acct = cfg.get("account_type", "Current Account")
-    for entry in cfg.get("pdfs", []):
-        if isinstance(entry, str):
-            yield entry, default_acct
-        elif isinstance(entry, tuple) and len(entry) == 2:
-            yield str(entry[0]), str(entry[1])
-        elif isinstance(entry, dict):
-            path = entry.get("path")
-            acct = entry.get("account_type", default_acct)
-            if path:
-                yield str(path), str(acct)
 
 
 def main():
@@ -120,28 +102,33 @@ def main():
         # },
 
     }
+    # choose extraction strategy: "auto" (native with OCR fallback), "native", or "ocr"
+    strategy = "auto"
 
-    bundle = {
-        "schema_version": "bank-ocr.v1",
-        "clients": []
-    }
+    bundle = {"schema_version": "bank-ocr.v1", "clients": []}
 
     try:
-
-        # data extraction strategies "auto" (native with ocr fallback), "native", "ocr"
-        strategy = "auto"
-
-        # Clean out previous results_audit
+        # Clean out previous audit artifacts
         nuke_dir(Path("results_audit"))
 
         for client_name, cfg in client_pdfs.items():
             client_block = {"name": client_name, "statements": []}
-            for pdf_path, account_type in _iter_client_entries(cfg):
-                stmt = process_pdf(pdf_path, client=client_name, account_type=account_type, strategy=strategy)
-                client_block["statements"].append(stmt)
+
+            # Iterate over client_pdfs: {"accounts": {acct_type: [pdfs...]}}
+            accounts = (cfg.get("accounts") or {}) if isinstance(cfg, dict) else {}
+            for account_type, pdfs in accounts.items():
+                for pdf_path in (pdfs or []):
+                    stmt = process_pdf(
+                        pdf_path,
+                        client=client_name,
+                        account_type=str(account_type),
+                        strategy=strategy,
+                        save_artifacts=True,
+                    )
+                    client_block["statements"].append(stmt)
             bundle["clients"].append(client_block)
 
-        # Save & validate
+        # Save bundle & validate
         Path("results").mkdir(parents=True, exist_ok=True)
         out_name = "_".join(n.lower().replace(" ", "_") for n in client_pdfs.keys()) + "_bundle.json"
         bundle_out = Path("results") / out_name
@@ -152,7 +139,7 @@ def main():
         print(f"\n✅ Bundle saved to {bundle_out}")
 
     finally:
-        # Always clean up raster cache
+        # Always clean the raster cache
         rasters_dir = Path("results") / "ocr_rasters"
         nuke_dir(rasters_dir)
 

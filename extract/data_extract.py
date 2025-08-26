@@ -2,7 +2,7 @@
 from __future__ import annotations
 import os, re
 from pathlib import Path
-from typing import Literal, Optional, Dict, Any
+from typing import Optional, Dict, Any
 import fitz
 
 from extract.helper_classes import OcrProfile
