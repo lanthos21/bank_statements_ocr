@@ -103,18 +103,20 @@ def main():
 
     }
     # choose extraction strategy: "auto" (native with OCR fallback), "native", or "ocr"
-    strategy = "auto"
+    strategy = "native"
 
     bundle = {"schema_version": "bank-ocr.v1", "clients": []}
 
     try:
-        # Clean out previous audit artifacts
+
+        # clean out previous audit files
         nuke_dir(Path("results_audit"))
 
+        # ---------------------------------------------------------------
+        # iterate over client_pdfs: {"accounts": {acct_type: [pdfs...]}}
+        # ---------------------------------------------------------------
         for client_name, cfg in client_pdfs.items():
             client_block = {"name": client_name, "statements": []}
-
-            # Iterate over client_pdfs: {"accounts": {acct_type: [pdfs...]}}
             accounts = (cfg.get("accounts") or {}) if isinstance(cfg, dict) else {}
             for account_type, pdfs in accounts.items():
                 for pdf_path in (pdfs or []):
@@ -128,7 +130,9 @@ def main():
                     client_block["statements"].append(stmt)
             bundle["clients"].append(client_block)
 
-        # Save bundle & validate
+        # ---------------------------------------------------------------
+        # save bundle & validate
+        # ---------------------------------------------------------------
         Path("results").mkdir(parents=True, exist_ok=True)
         out_name = "_".join(n.lower().replace(" ", "_") for n in client_pdfs.keys()) + "_bundle.json"
         bundle_out = Path("results") / out_name
@@ -139,7 +143,7 @@ def main():
         print(f"\n✅ Bundle saved to {bundle_out}")
 
     finally:
-        # Always clean the raster cache
+        # clean the raster cache
         rasters_dir = Path("results") / "ocr_rasters"
         nuke_dir(rasters_dir)
 

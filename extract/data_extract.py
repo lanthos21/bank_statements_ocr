@@ -13,8 +13,6 @@ from extract.helpers import (
 from extract.native_text import native_page_to_ocr_shape_lines
 from extract.ocr_engine import ocr_page_build_lines
 
-
-# Debug knob (kept same semantics)
 DEBUG_EXTRACT = True
 def _dbg(msg: str):
     if DEBUG_EXTRACT:
@@ -23,13 +21,11 @@ def _dbg(msg: str):
 _AMOUNT_RE = re.compile(r"(?<!\w)(?:[-+]?\d{1,3}(?:[ ,]\d{3})*(?:[.,]\d{2})|\d+\s\d{2})(?!\w)")
 
 def _native_is_sufficient(lines: list[dict]) -> bool:
-    """Very light check so 'auto' only falls back to OCR when native is clearly weak/empty."""
     if not lines:
         return False
-    # at least one amount-like token OR a healthy number of lines
     for ln in lines:
         for w in (ln.get("words") or []):
-            t = (w.get("text") or "").replace("\u00A0", " ").replace("\u2009", " ").replace("\u202F", " ").strip()
+            t = (w.get("text") or "").replace("\u00A0"," ").replace("\u2009"," ").replace("\u202F"," ").strip()
             if _AMOUNT_RE.search(t):
                 return True
     return len(lines) >= 5
@@ -40,36 +36,14 @@ def extract_pdf_to_raw_data(
     bank_code: Optional[str] = None,
     strategy: Optional[str] = "auto",
 ) -> Dict[str, Any]:
-    """
-    Orchestrates extraction:
-      - 'auto': try native text first; if weak/empty, fall back to OCR (per page).
-      - 'native': native text only (no OCR fallback).
-      - 'ocr': OCR only (skip native completely).
-
-    Returns the SAME structure your parsers already consume:
-      {
-        "file_name": <str>,
-        "pages": [
-          {
-            "page_number": int,
-            "currency": str|None,
-            "currency_detect_method": str,
-            "currency_confidence": float,
-            "lines": [ { line_num, y, y0, y1, line_text, words:[...], native?: True } ],
-            "raster_path": <png path>,
-            "image_width": int,
-            "image_height": int,
-          }, ...
-        ]
-      }
-    """
     strategy = (strategy or "auto").lower()
     if strategy not in ("auto", "native", "ocr"):
         raise ValueError(f"Unknown strategy '{strategy}'. Use 'auto', 'native', or 'ocr'.")
 
     out_pages: list[dict] = []
     out_dir = os.path.join("results", "ocr_rasters")
-    os.makedirs(out_dir, exist_ok=True)
+    # CHANGED: do NOT create the directory up front
+    # os.makedirs(out_dir, exist_ok=True)
     stem = Path(pdf_path).stem
 
     doc = fitz.open(pdf_path)
@@ -78,7 +52,7 @@ def extract_pdf_to_raw_data(
             pno = page_idx + 1
             page = doc.load_page(page_idx)
 
-            # --- Currency via native text (cheap, works for both modes) ---
+            # Currency via native text
             cur, cur_method, cur_conf = (None, "unknown", 0.0)
             if bank_code:
                 try:
@@ -86,22 +60,19 @@ def extract_pdf_to_raw_data(
                 except Exception:
                     pass
 
-            # --- Render & preprocess once (used by both approaches) ---
+            # Render & preprocess in-memory (no disk write yet)
             base = render_page_to_image(doc, page_idx, profile.preprocess.dpi)
             processed = preprocess_image(base, profile.preprocess)
-            raster_path = os.path.join(out_dir, f"{stem}_p{pno:03d}.png")
-            safe_write_png(raster_path, processed)
-
             W, H = int(processed.shape[1]), int(processed.shape[0])
 
-            # Decide which path(s) to run
+            raster_path_str = os.path.join(out_dir, f"{stem}_p{pno:03d}.png")  # plan the path; don't write yet
+
             run_native = strategy in ("auto", "native")
             run_ocr    = strategy in ("auto", "ocr")
 
             lines: list[dict] = []
-
-            # --- Native first (auto/native) ---
             native_ok = False
+
             if run_native:
                 lines = native_page_to_ocr_shape_lines(
                     page,
@@ -119,14 +90,18 @@ def extract_pdf_to_raw_data(
                     "currency_detect_method": cur_method,
                     "currency_confidence": round(cur_conf, 2),
                     "lines": lines,
-                    "raster_path": raster_path,
+                    "raster_path": None,          # CHANGED: no file created
                     "image_width": W,
                     "image_height": H,
                 })
                 continue
 
-            # --- OCR (fallback in auto, or always in ocr mode) ---
+            # OCR fallback / forced
             if run_ocr and (strategy == "ocr" or not native_ok):
+                # CHANGED: only now do we persist the raster PNG
+                os.makedirs(out_dir, exist_ok=True)
+                safe_write_png(raster_path_str, processed)
+
                 lines = ocr_page_build_lines(
                     page=page,
                     page_num=pno,
@@ -139,20 +114,20 @@ def extract_pdf_to_raw_data(
                     "currency_detect_method": cur_method,
                     "currency_confidence": round(cur_conf, 2),
                     "lines": lines,
-                    "raster_path": raster_path,
+                    "raster_path": raster_path_str,  # CHANGED: path exists only in OCR path
                     "image_width": W,
                     "image_height": H,
                 })
                 continue
 
-            # native-only but native was empty/weak → return page shell with no lines
+            # native-only but weak/empty
             out_pages.append({
                 "page_number": pno,
                 "currency": cur,
                 "currency_detect_method": cur_method,
                 "currency_confidence": round(cur_conf, 2),
                 "lines": [],
-                "raster_path": raster_path,
+                "raster_path": None,              # CHANGED
                 "image_width": W,
                 "image_height": H,
             })
