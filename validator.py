@@ -244,7 +244,19 @@ def validate_single_statement(statement: dict) -> dict:
         # True tx sums (from amounts)
         in_tx, out_tx = _tx_sums(txs)
 
-        print(f"\n{cur} ({n} transactions)")
+
+        pu = ((s.get("meta") or {}).get("page_usage") or {})
+        if pu:
+            nt = pu.get("native_text_pages", 0)
+            oc = pu.get("ocr_pages", 0)
+            if nt != 0 and oc != 0:
+                print(f"\n{cur} ({n} transactions from {nt} text & {oc} ocr pages)")
+            elif nt != 0:
+                print(f"\n{cur} ({n} transactions from {nt} text pages)")
+            else:
+                print(f"\n{cur} ({n} transactions from {oc} ocr pages)")
+        else:
+            print(f"\n{cur} ({n} transactions)")
 
         # Opening
         if open_sum is None and open_tx is None:

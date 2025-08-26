@@ -60,50 +60,61 @@ def process_pdf(
 
 def main():
     client_pdfs: Dict[str, Dict[str, Any]] = {
-        "Client 1": {
-            "accounts": {
-                "Current Account": [
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\marlon aib #061 from  3 may to 9 jan-5933.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\Copy of aib ca #8056 04.06.24 - 13.01.25-7861.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib 26th april 2024-1723.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib ca #3049.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current aug-3647.pdf",
-                ],
-                # "Savings Account": [
-                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 31 january 2025-7750.pdf",
-                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 30 may 2025-2533.pdf",
-                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 28 february 2025-9172.pdf",
-                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 may 2025-9645.pdf",
-                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 july 2025-3482.pdf",
-                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 january 2025-9006.pdf",
-                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 april 2025-5772.pdf",
-                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 01 august 2025-3641.pdf",
-                # ],
-            }
-        },
-
-        # "Client 2": {
+        # "Client 1": {
         #     "accounts": {
         #         "Current Account": [
-        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf",
-        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\downloadStatement v2.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\marlon aib #061 from  3 may to 9 jan-5933.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\Copy of aib ca #8056 04.06.24 - 13.01.25-7861.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib 26th april 2024-1723.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib ca #3049.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current aug-3647.pdf",
         #         ],
         #         "Savings Account": [
-        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #2587 april.pdf",
-        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #4018 11.01.24 - 23.09.24.pdf",
-        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb sa #3734 14.06.24 - 12.05.25-9817.pdf",
-        #         ],
-        #         "N26 Accounts": [
-        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\david n26 statements.pdf",
-        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf",
-        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 march.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 31 january 2025-7750.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 30 may 2025-2533.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 28 february 2025-9172.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 may 2025-9645.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 july 2025-3482.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 january 2025-9006.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 02 april 2025-5772.pdf",
+        #             r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\aib\aib current 01 august 2025-3641.pdf",
         #         ],
         #     }
         # },
 
+        "Client 2": {
+            "accounts": {
+                # "BOI Accounts": [
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\boi may-1871.pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\boi\downloadStatement v2.pdf",
+                # ],
+                # "PTSB Accounts": [
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #2587 april.pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #4018 11.01.24 - 23.09.24.pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb sa #3734 14.06.24 - 12.05.25-9817.pdf",
+                # ],
+                "Revolut Accounts": [
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\account-statement_2024-09-26_2025-08-11_en-gb_618134-6107.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\august 2025 current account account-statement_2025-01-01_2025-08-07_en-gb_423fb1-7838.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut euro with pockets.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut gbp.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency2.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi euro accounts.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut spanish.pdf",
+                ],
+                # "N26 Accounts": [
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\david n26 statements.pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 march.pdf",
+                # ],
+            }
+        },
+
     }
+
     # choose extraction strategy: "auto" (native with OCR fallback), "native", or "ocr"
-    strategy = "native"
+    strategy = "auto"
 
     bundle = {"schema_version": "bank-ocr.v1", "clients": []}
 
