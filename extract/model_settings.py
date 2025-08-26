@@ -1,6 +1,6 @@
 import cv2
 
-from ocr.helper_classes import OcrProfile, PreprocessSettings, TesseractSettings
+from extract.helper_classes import OcrProfile, PreprocessSettings, TesseractSettings
 
 AIB_SETTINGS = OcrProfile(
     name="AIB",

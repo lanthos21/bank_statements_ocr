@@ -1,8 +1,8 @@
-from ocr.model_settings import AIB_SETTINGS
-from ocr.model_settings import BOI_SETTINGS
-from ocr.model_settings import N26_SETTINGS
-from ocr.model_settings import PTSB_SETTINGS
-from ocr.model_settings import REVOLUT_SETTINGS
+from extract.model_settings import AIB_SETTINGS
+from extract.model_settings import BOI_SETTINGS
+from extract.model_settings import N26_SETTINGS
+from extract.model_settings import PTSB_SETTINGS
+from extract.model_settings import REVOLUT_SETTINGS
 
 OCR_SETTINGS = {
     "AIB": AIB_SETTINGS,

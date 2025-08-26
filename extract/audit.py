@@ -1,3 +1,4 @@
+# extract/audit.py
 import os, pandas as pd
 from pathlib import Path
 from typing import List, Dict, Any
@@ -10,9 +11,7 @@ def write_ocr_dump(raw_ocr: Dict[str, Any], pdf_path: str) -> Path:
             f.write(f"\n=== Page {page['page_number']} ===\n")
             for line in page.get("lines", []):
                 f.write((line.get("line_text") or "") + "\n")
-    # print(f"📝 OCR debug dump saved to {debug_txt_path}")
     return debug_txt_path
-
 
 def save_ocr_words_csv(raw_ocr, out_path="results_audit/ocr_words.csv"):
     rows = []
@@ -38,12 +37,10 @@ def save_ocr_words_csv(raw_ocr, out_path="results_audit/ocr_words.csv"):
                     "line_y": line_y,
                 })
     df = pd.DataFrame(rows)
-    if not os.path.isdir(os.path.dirname(out_path)):
-        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
     df.sort_values(["page", "line_num", "left"], inplace=True)
     df.to_csv(out_path, index=False)
     print(f"🔎 OCR words CSV saved to {out_path}")
-
 
 def save_ocr_pretty_txt(raw_ocr, out_path="results_audit/ocr_words_pretty.txt"):
     with open(out_path, "w", encoding="utf-8") as f:
