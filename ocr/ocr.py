@@ -493,13 +493,6 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
     - Always supports a generic band/tail "gap rescue" (profile-driven) that re-OCRs large vertical gaps
       and merges any rescued lines; stays bank-agnostic via `profile.band_rescue`.
     """
-    import os
-    from pathlib import Path
-    import numpy as np
-    import pandas as pd
-    import cv2
-    import pytesseract
-    import fitz
 
     doc = fitz.open(pdf_path)
     pages_output = []
@@ -526,7 +519,6 @@ def ocr_pdf_to_raw_data(pdf_path: str, profile: OcrProfile, bank_code: str | Non
             # ---- Base raster + preprocess ----
             base = render_page_to_image(doc, page_num, profile.preprocess.dpi)
             processed = preprocess_image(base, profile.preprocess)
-
             # Persist processed raster so parsers can run ROI crops later
             raster_path = os.path.join(out_dir, f"{stem}_p{pno:03d}.png")
             _safe_write_png(raster_path, processed)

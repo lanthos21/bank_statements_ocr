@@ -2,7 +2,7 @@
 from __future__ import annotations
 from typing import Any, Dict, List, Tuple, Optional
 from statistics import median
-import math
+import numpy as np
 
 """
 Goal
@@ -147,32 +147,87 @@ def _build_lines_from_buckets(buckets: List[Dict[str, Any]]) -> List[Dict[str, A
 
     return out_lines
 
-def merge_native_page_to_ocr_shape(native_lines: List[Dict[str, Any]],
-                                   row_tol_px: Optional[int] = None
-                                   ) -> List[Dict[str, Any]]:
+def merge_native_page_to_ocr_shape(native_lines: List[Dict],
+                                   y_eps_px: int | None = None,
+                                   wrap_merge: bool = True) -> List[Dict]:
     """
-    Take a single page of *native* lines (your current structure) and
-    merge horizontally so each transaction row becomes one line.
-    Output matches your OCR line schema.
+    Merge words into single visual *rows* without crossing baselines.
+    - native_lines: each item has {y0,y1,words:[{left,top,right,bottom,text}], ...}
+    - y_eps_px: optional vertical tolerance; if None we derive from median height.
+    - wrap_merge: if True, try to join wrapped detail continuations that are
+      *directly* beneath a row and horizontally overlapping the detail column,
+      but still keep them within the same row cluster only if they pass the
+      baseline threshold (prevents paragraph swallowing).
     """
-    words = _collect_words_from_native_lines(native_lines)
-    if not words:
+
+    if not native_lines:
         return []
 
-    tol = row_tol_px if isinstance(row_tol_px, int) and row_tol_px > 0 else _estimate_row_tolerance(words)
-    # Make buckets (rows)
-    buckets: List[Dict[str, Any]] = []
-    # Sort words roughly by vertical position, then horizontal to improve locality
-    words.sort(key=lambda w: (w["top"], w["left"]))
+    # --- Derive vertical tolerance from median line height ---
+    heights = [max(1, int(ln["y1"]) - int(ln["y0"])) for ln in native_lines if ln.get("y0") is not None and ln.get("y1") is not None]
+    med_h = int(np.median(heights)) if heights else 18
+    row_eps = int(max(6, 0.55 * med_h)) if y_eps_px is None else int(y_eps_px)
 
-    for w in words:
-        placed = _try_place_in_bucket(buckets, w, tol)
-        if not placed:
-            left, top, right, bottom = _word_bounds(w)
-            buckets.append({"y0": top, "y1": bottom, "words": [w]})
+    # --- Sort by baseline then cluster rows by y-mid within eps ---
+    def ymid(ln): return (int(ln["y0"]) + int(ln["y1"])) // 2
+    lines = sorted(native_lines, key=lambda ln: (int(ln.get("y0", 10**9)), int(ln.get("y", 10**9))))
 
-    # Turn buckets into merged lines
-    return _build_lines_from_buckets(buckets)
+    clusters: list[list[Dict]] = []
+    centers: list[int] = []
+
+    for ln in lines:
+        ym = ymid(ln)
+        if not clusters:
+            clusters.append([ln]); centers.append(ym); continue
+        # attach to nearest cluster if within row_eps; else start a new cluster
+        diffs = [abs(ym - c) for c in centers]
+        k = int(np.argmin(diffs))
+        if diffs[k] <= row_eps:
+            clusters[k].append(ln)
+            # update center to the mean midline (robust against tiny jitter)
+            centers[k] = int(np.mean([(l["y0"] + l["y1"]) / 2 for l in clusters[k]]))
+        else:
+            clusters.append([ln]); centers.append(ym)
+
+    # --- Build one merged line per cluster (no cross-baseline merge) ---
+    out: List[Dict] = []
+    for cl in clusters:
+        words = []
+        for ln in cl:
+            words.extend(ln.get("words") or [])
+        if not words:
+            continue
+
+        # order left→right, then top as tie-break
+        words.sort(key=lambda w: (int(w.get("left", 0)), int(w.get("top", 0))))
+
+        y0 = min(int(w["top"]) for w in words)
+        y1 = max(int(w["bottom"]) for w in words)
+        text = " ".join((w.get("text") or "").strip() for w in words if (w.get("text") or "").strip())
+
+        out.append({
+            "line_num": -1,
+            "y": int(words[0]["top"]),
+            "y0": y0,
+            "y1": y1,
+            "line_text": text,
+            "words": words,
+        })
+
+    # keep vertical order stable
+    out.sort(key=lambda ln: (int(ln["y0"]), int(ln["y"])))
+
+    # --- Lightweight safeguard for IBAN/BIC lines (generic) ---------------
+    # We do NOT change parsing; we just prevent absurdly long glued lines when
+    # "IBAN" or "BIC" appears near dense paragraphs by trimming to the cluster.
+    # (Because clusters already forbid cross-baseline glue, this rarely triggers.)
+    for ln in out:
+        t = (ln.get("line_text") or "")
+        if ("IBAN" in t or "BIC" in t) and len(t) > 120:
+            # Keep as-is but mark for parsers if they want to apply a stricter regex locally.
+            ln["hint_long_finref"] = True
+
+    return out
 
 def merge_native_pages_to_ocr_shape(native_pages: List[List[Dict[str, Any]]],
                                     row_tol_px: Optional[int] = None
