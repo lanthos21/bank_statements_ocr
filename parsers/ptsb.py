@@ -924,11 +924,11 @@ def extract_iban(pages: list[dict]) -> str | None:
 # ---------------------------------
 # Public entrypoint
 # ---------------------------------
-def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unknown", debug: bool = False) -> dict:
+def parse_statement(raw, client: str = "Unknown", account_type: str = "Unknown", debug: bool = False) -> dict:
     """
     Returns a single 'statement node' (no top-level 'client'), aligned with AIB/BOI/N26.
     """
-    pages = raw_ocr.get("pages", []) or []
+    pages = raw.get("pages", []) or []
 
     iban = extract_iban(pages)
     currency = "GBP" if iban and iban.upper().startswith("GB") else "EUR"
@@ -972,17 +972,17 @@ def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unkno
             print(f"⚠️ Failed to write ptsb_debug_rows.csv: {e}")
 
     # Lightweight statement_id (same pattern as AIB/BOI/N26)
-    sid_basis = f"{raw_ocr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
+    sid_basis = f"{raw.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
     statement_id = hashlib.sha1(sid_basis.encode("utf-8")).hexdigest()[:12] if sid_basis.strip("|") else None
 
     return {
         "statement_id": statement_id,
-        "file_name": raw_ocr.get("file_name"),
+        "file_name": raw.get("file_name"),
         "institution": "PTSB",
         "account_type": account_type,
         "iban": iban,
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
-        "meta": (raw_ocr.get("meta") or {}),
+        "meta": (raw.get("meta") or {}),
     }

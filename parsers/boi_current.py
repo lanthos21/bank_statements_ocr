@@ -405,13 +405,13 @@ def _build_balances(buckets: Dict[str, List[dict]], opening: float | None, closi
     return out
 
 # ---------- Public entrypoint ----------
-def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = "Unknown", debug: bool = False) -> dict:
+def parse_statement(rawr: dict, client: str = "Unknown", account_type: str = "Unknown", debug: bool = False) -> dict:
     """
     Returns a single 'statement node' (no top-level 'client'), matching the AIB shape.
     This lets main.py call parse_statement repeatedly (across banks) and bundle all
     statements into one JSON.
     """
-    pages = raw_ocr.get("pages", []) or []
+    pages = rawr.get("pages", []) or []
 
     # IBAN (used to bucket currency)
     iban = extract_iban(pages)
@@ -435,17 +435,17 @@ def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = 
         end_date = None
 
     # Optional lightweight statement_id (mirrors AIB approach)
-    sid_basis = f"{raw_ocr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
+    sid_basis = f"{rawr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
     statement_id = hashlib.sha1(sid_basis.encode("utf-8")).hexdigest()[:12] if sid_basis.strip("|") else None
 
     return {
         "statement_id": statement_id,
-        "file_name": raw_ocr.get("file_name"),
+        "file_name": rawr.get("file_name"),
         "institution": "Bank of Ireland",
         "account_type": account_type,
         "iban": iban,
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
-        "meta": (raw_ocr.get("meta") or {}),
+        "meta": (rawr.get("meta") or {}),
     }

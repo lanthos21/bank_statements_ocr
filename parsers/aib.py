@@ -384,14 +384,14 @@ def infer_currency_from_headers(pages: list[dict]) -> str | None:
 # ----------------------------
 
 def parse_statement(
-    raw_ocr: dict,
+    raw: dict,
     client: str = "Unknown",
     account_type: str = "Unknown",
     institution: str = "Unknown",   # let caller pass the detected bank name
     debug: bool = True,
 ) -> dict:
 
-    pages = raw_ocr.get("pages", []) or []
+    pages = raw.get("pages", []) or []
 
     # --- identifiers / currency ---
     iban = extract_iban(pages)
@@ -450,18 +450,18 @@ def parse_statement(
     }
 
     # --- id ---
-    sid_basis = f"{raw_ocr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
+    sid_basis = f"{raw.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
     statement_id = hashlib.sha1(sid_basis.encode("utf-8")).hexdigest()[:12] if sid_basis.strip("|") else None
 
     return {
         "statement_id": statement_id,
-        "file_name": raw_ocr.get("file_name"),
+        "file_name": raw.get("file_name"),
         "institution": institution or "AIB",   # keep older behavior if not passed
         "account_type": account_type,
         "iban": iban,
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
-        "meta": (raw_ocr.get("meta") or {}),  # includes page_source_counts from extract/data_extract.py
+        "meta": (raw.get("meta") or {}),  # includes page_source_counts from extract/data_extract.py
     }
 

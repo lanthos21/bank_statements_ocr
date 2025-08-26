@@ -402,14 +402,14 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
 # ---------------------------------------------------------------------
 # Public entry
 # ---------------------------------------------------------------------
-def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unknown") -> dict:
+def parse_statement(raw, client: str = "Unknown", account_type: str = "Unknown") -> dict:
     # IBAN from flat text (for bucket key only)
     full_text = "\n".join("\n".join(line.get("line_text", "") for line in page.get("lines", []))
-                          for page in raw_ocr.get("pages", []))
+                          for page in raw.get("pages", []))
     m = re.search(r"IBAN\s+([A-Z]{2}\d{2}[A-Z0-9]{11,30})", full_text)
     iban = m.group(1).strip() if m else None
 
-    pages = raw_ocr.get("pages", []) or []
+    pages = raw.get("pages", []) or []
 
     # 1) parse rows
     transactions = parse_transactions(pages, iban=iban)
@@ -440,17 +440,17 @@ def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unkno
         start_date = end_date = None
 
     # 5) id
-    sid_basis = f"{raw_ocr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
+    sid_basis = f"{raw.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
     statement_id = hashlib.sha1(sid_basis.encode("utf-8")).hexdigest()[:12] if sid_basis.strip("|") else None
 
     return {
         "statement_id": statement_id,
-        "file_name": raw_ocr.get("file_name"),
+        "file_name": raw.get("file_name"),
         "institution": "Revolut",
         "account_type": account_type,
         "iban": iban,
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
-        "meta": (raw_ocr.get("meta") or {}),
+        "meta": (raw.get("meta") or {}),
     }

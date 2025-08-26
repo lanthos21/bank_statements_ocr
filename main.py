@@ -105,7 +105,7 @@ def main():
                 # ],
                 "N26 Accounts": [
                     # r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\david n26 statements.pdf",
-                    # r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf",
                     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 march.pdf",
                 ],
             }

@@ -499,12 +499,12 @@ def build_currency_sections_balances(buckets: Dict[str, List[dict]], summaries: 
     return out
 
 # ---------------- public entrypoint ----------------
-def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = "Unknown", debug: bool = True) -> dict:
+def parse_statement(raw: dict, client: str = "Unknown", account_type: str = "Unknown", debug: bool = True) -> dict:
     """
     Returns a single 'statement node' (no top-level 'client'), aligned with AIB/BOI.
     Main can call this repeatedly across banks and bundle the nodes together.
     """
-    pages = raw_ocr.get("pages", []) or []
+    pages = raw.get("pages", []) or []
 
     # Flat text for IBAN/BIC
     full_text = "\n".join("\n".join((ln.get("line_text") or "") for ln in pg.get("lines", [])) for pg in pages)
@@ -542,17 +542,17 @@ def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = 
         start_date = end_date = None
 
     # Optional lightweight statement_id (matches AIB/BOI scheme)
-    sid_basis = f"{raw_ocr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
+    sid_basis = f"{raw.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
     statement_id = hashlib.sha1(sid_basis.encode("utf-8")).hexdigest()[:12] if sid_basis.strip("|") else None
 
     return {
         "statement_id": statement_id,
-        "file_name": raw_ocr.get("file_name"),
+        "file_name": raw.get("file_name"),
         "institution": "N26",
         "account_type": account_type,
         "iban": iban,
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
-        "meta": (raw_ocr.get("meta") or {}),
+        "meta": (raw.get("meta") or {}),
     }
