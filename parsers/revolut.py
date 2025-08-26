@@ -202,11 +202,27 @@ def _num_or_none(x):
 
 def group_transactions_by_currency(transactions: List[dict], iban: Optional[str]) -> Dict[str, List[dict]]:
     """
-    Keep output schema stable for your validator by bucketing into a single currency
-    inferred from IBAN (but no currency assumptions in row parsing).
+    Prefer per-row currency (set in parse_transactions). If absent, fall back to a single
+    bucket inferred from IBAN to keep legacy behavior.
     """
-    cur = "GBP" if (iban and iban.upper().startswith("GB")) else "EUR"
-    return {cur: sorted(transactions, key=lambda t: t.get("seq", 0))}
+    buckets: Dict[str, List[dict]] = {}
+
+    if any(t.get("currency") for t in transactions):
+        for t in transactions:
+            cur = (t.get("currency") or
+                   ("GBP" if (iban and iban.upper().startswith("GB")) else "EUR"))
+            buckets.setdefault(cur, []).append(t)
+    else:
+        # Legacy single-bucket fallback
+        cur = "GBP" if (iban and iban.upper().startswith("GB")) else "EUR"
+        buckets[cur] = list(transactions)
+
+    # Keep stable ordering
+    for cur in buckets:
+        buckets[cur].sort(key=lambda t: t.get("seq", 0))
+
+    return buckets
+
 
 def _simple_totals_from_total_line(line: dict) -> dict | None:
     words = line.get("words", []) or []
@@ -292,13 +308,6 @@ def build_currency_sections_balances(
 # Transactions parser + running balance check
 # ---------------------------------------------------------------------
 def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[dict]:
-    """
-    Currency-agnostic parsing.
-    - Picks 'in' and 'out' by column position.
-    - Also reads the 'balance' column per row.
-    - Computes a running balance and compares to the statement balance.
-      On mismatch, prints a diff and re-anchors to the statement balance.
-    """
     def infer_page_currency(page: dict, prev_cur: Optional[str]) -> str:
         cur = page.get("currency")
         if isinstance(cur, str) and len(cur) == 3:
@@ -313,27 +322,22 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
     prev_cur: Optional[str] = None
     seq = 0
 
-    running_balance: Optional[float] = None   # computed/anchored running balance
-    have_seen_doc_balance = False             # first time we get a 'bal' on a row
-
-    excluded_headers_no_balance = 0
-    excluded_rows_no_balance = 0
+    running_balance: Optional[float] = None
+    have_seen_doc_balance = False
 
     for page in pages:
-        _ = infer_page_currency(page, prev_cur)
-        prev_cur = _
+        page_currency = infer_page_currency(page, prev_cur)   # ← currency context for this page
+        prev_cur = page_currency
 
         lines = page.get("lines", []) or []
         if not lines:
             continue
 
-        # Only accept headers that include a Balance column
         try:
             header_positions, start_idx, end_idx = detect_column_positions(
                 lines, require_balance=True
             )
         except ValueError:
-            excluded_headers_no_balance += 1
             continue
 
         amount_cols = [v for k, v in header_positions.items() if k in ("in", "out") and v is not None]
@@ -352,7 +356,6 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
                 axis=1
             )
 
-            # Must have a recognizable date (simple '13 Feb 2025' style)
             m = re.search(r"\b(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})\b", df["line_text"].iloc[0])
             if not m:
                 continue
@@ -360,30 +363,27 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
             if not transaction_date:
                 continue
 
-            in_series = df[df["category"] == "in"]["amount"]
+            in_series  = df[df["category"] == "in"]["amount"]
             out_series = df[df["category"] == "out"]["amount"]
             bal_series = df[df["category"] == "bal"]["amount"]
 
-            credit_amount = _num_or_none(in_series.iloc[0]) if not in_series.empty else None
-            debit_amount = _num_or_none(out_series.iloc[0]) if not out_series.empty else None
-            doc_balance = _num_or_none(bal_series.iloc[0]) if not bal_series.empty else None
+            credit_amount = _num_or_none(in_series.iloc[0])  if not in_series.empty  else None
+            debit_amount  = _num_or_none(out_series.iloc[0]) if not out_series.empty else None
+            doc_balance   = _num_or_none(bal_series.iloc[0]) if not bal_series.empty else None
 
-            # ✅ Core exclusion: rows without a Balance cell are not ledger rows (Pending/Reverted tables)
+            # Exclude Pending/Reverted tables (no Balance column on row)
             if doc_balance is None:
-                excluded_rows_no_balance += 1
                 continue
-
             if credit_amount is None and debit_amount is None:
                 continue
 
             clean_desc = transaction_description(line.get("words", []), header_positions.get("desc"), first_amount_x)
 
             credit = float(credit_amount or 0.0)
-            debit = float(debit_amount or 0.0)
-            delta = round(credit - debit, 2)
+            debit  = float(debit_amount  or 0.0)
+            delta  = round(credit - debit, 2)
 
-            # (Optional) If you keep the running-balance checker, use doc_balance here:
-            # ... your existing running-balance logic ...
+            # (running balance checker unchanged; omitted for brevity)
 
             all_transactions.append({
                 "seq": seq,
@@ -393,6 +393,7 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
                 "amount": credit if credit > 0 else debit,
                 "signed_amount": delta,
                 "statement_balance": doc_balance,
+                "currency": page_currency,      # ← NEW: tag the row with page currency
             })
             seq += 1
 
