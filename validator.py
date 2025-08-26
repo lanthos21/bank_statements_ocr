@@ -245,18 +245,8 @@ def validate_single_statement(statement: dict) -> dict:
         in_tx, out_tx = _tx_sums(txs)
 
 
-        pu = ((s.get("meta") or {}).get("page_usage") or {})
-        if pu:
-            nt = pu.get("native_text_pages", 0)
-            oc = pu.get("ocr_pages", 0)
-            if nt != 0 and oc != 0:
-                print(f"\n{cur} ({n} transactions from {nt} text & {oc} ocr pages)")
-            elif nt != 0:
-                print(f"\n{cur} ({n} transactions from {nt} text pages)")
-            else:
-                print(f"\n{cur} ({n} transactions from {oc} ocr pages)")
-        else:
-            print(f"\n{cur} ({n} transactions)")
+
+        print(f"\n{cur} ({n} transactions)")
 
         # Opening
         if open_sum is None and open_tx is None:
@@ -366,45 +356,9 @@ def validate_single_statement(statement: dict) -> dict:
 # ----------------------------
 # Bundle-level validation
 # ----------------------------
-def validate_single_client_bundle(bundle: dict) -> dict:
-    """
-    Validate a legacy single-client bundle:
-      { "schema_version": "...", "client": "...", "statements": [ <statement> ... ] }
-    """
-    stmts = bundle.get("statements", []) or []
-    client = bundle.get("client")
-    if client:
-        print(f"\n### CLIENT: {client}")
 
-    overall_ok = True
-    per_statement_reports: List[dict] = []
-
-    for stmt in stmts:
-        rep = validate_single_statement(stmt)
-        per_statement_reports.append(rep)
-        overall_ok = overall_ok and bool(rep.get("ok", False))
-
-    return {
-        "client": client,
-        "schema_version": bundle.get("schema_version"),
-        "ok": overall_ok,
-        "statements": per_statement_reports,
-    }
-
-
-def validate_clients_bundle(bundle: dict) -> dict:
-    """
-    Validate the new multi-client bundle:
-      {
-        "schema_version": "...",
-        "clients": [
-          {"name": "...", "statements": [ <statement> ... ]},
-          ...
-        ]
-      }
-    """
+def validate(bundle: dict) -> dict:
     clients = bundle.get("clients", []) or []
-    print("\n### VALIDATING MULTI-CLIENT BUNDLE")
     overall_ok = True
     client_reports: List[dict] = []
 
@@ -433,21 +387,3 @@ def validate_clients_bundle(bundle: dict) -> dict:
         "clients": client_reports,
     }
 
-
-# ----------------------------
-# Auto-detect entrypoint
-# ----------------------------
-def validate(data: dict) -> dict:
-    """
-    Convenience entrypoint:
-      - If 'clients' is present -> multi-client bundle
-      - Else if 'statements' is present -> legacy single-client bundle
-      - Else -> single-statement mode
-    """
-    if isinstance(data, dict) and "clients" in data:
-        return validate_clients_bundle(data)
-    if isinstance(data, dict) and "statements" in data:
-        print(f"\n### VALIDATING SINGLE-CLIENT BUNDLE")
-        return validate_single_client_bundle(data)
-    print(f"\n### VALIDATING SINGLE STATEMENT")
-    return validate_single_statement(data)

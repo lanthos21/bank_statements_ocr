@@ -554,5 +554,4 @@ def parse_statement(raw: dict, client: str = "Unknown", account_type: str = "Unk
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
-        "meta": (raw.get("meta") or {}),
     }

@@ -462,6 +462,5 @@ def parse_statement(
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
-        "meta": (raw.get("meta") or {}),  # includes page_source_counts from extract/data_extract.py
     }
 

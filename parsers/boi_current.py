@@ -447,5 +447,4 @@ def parse_statement(rawr: dict, client: str = "Unknown", account_type: str = "Un
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
-        "meta": (rawr.get("meta") or {}),
     }
