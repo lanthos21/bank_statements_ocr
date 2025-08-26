@@ -63,40 +63,54 @@ def _row_key(anchor_y: float, med_h: float) -> int:
 # ---------------- header detection ----------------
 def _find_header_columns_by_words(pages: List[dict]) -> Optional[Dict[str, int]]:
     """
-    Find 'Booking Date' + 'Amount' header; returns column windows + hard left date cut.
+    Find 'Booking Date' + 'Amount' (EN) or 'Buchungsdatum' + 'Betrag' (DE)
+    on a *single visual line* (y-cluster). Returns robust column windows.
     """
     for page in pages[:3]:
         df = _page_words_to_df(page)
         if df.empty:
             continue
-        for _, ln in df.groupby(["block_num","par_num","line_num"]):
-            words = ln["text"].str.strip().str.lower().tolist()
-            if not words:
+
+        # scan visual lines near the top
+        for ln in _yclusters(df):
+            if ln.empty:
                 continue
-            s = " ".join(words)
-            if ("booking" in s and "date" in s) and ("amount" in s):
-                amt_words = ln[ln["text"].str.strip().str.lower().eq("amount")]
-                if amt_words.empty:
-                    continue
-                amount_left  = int(amt_words["left"].median())
-                amount_right = int((amt_words["left"] + amt_words["width"]).median())
+            words_norm = ln["text"].astype(str).str.strip().str.lower()
+            s = " ".join(words_norm.tolist())
 
-                date_tokens = ln[ln["text"].str.strip().str.lower().isin(["booking","date"])]
-                if date_tokens.empty:
-                    continue
-                date_left  = int(date_tokens["left"].min())
-                date_right = int((date_tokens["left"] + date_tokens["width"]).max())
+            is_en = ("booking" in s and "date" in s and "amount" in s)
+            is_de = ("buchungsdatum" in s and "betrag" in s)
+            if not (is_en or is_de):
+                continue
 
-                pad = 36
-                desc_max_right = date_left - 40
-                return dict(
-                    date_left=date_left - pad,
-                    date_right=date_right + pad,
-                    amount_left=amount_left - 80,
-                    amount_right=amount_right + 140,
-                    desc_max_right=desc_max_right,
-                    date_left_hard=date_left
-                )
+            # locate the 'Amount' / 'Betrag' token(s) *on this line only*
+            if is_en:
+                amt_line = ln[words_norm.eq("amount")]
+                date_tokens = ln[words_norm.isin(["booking", "date"])]
+            else:
+                amt_line = ln[words_norm.eq("betrag")]
+                date_tokens = ln[words_norm.eq("buchungsdatum")]
+
+            if amt_line.empty or date_tokens.empty:
+                continue
+
+            amount_left  = int(amt_line["left"].median())
+            amount_right = int((amt_line["left"] + amt_line["width"]).median())
+
+            date_left  = int(date_tokens["left"].min())
+            date_right = int((date_tokens["left"] + date_tokens["width"]).max())
+
+            pad = 36
+            desc_max_right = date_left - 40
+
+            return dict(
+                date_left=date_left - pad,
+                date_right=date_right + pad,
+                amount_left=amount_left - 80,
+                amount_right=amount_right + 140,
+                desc_max_right=desc_max_right,
+                date_left_hard=date_left
+            )
     return None
 
 # ---------------- y-clusters ----------------
@@ -540,4 +554,5 @@ def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = 
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
+        "meta": (raw_ocr.get("meta") or {}),
     }

@@ -984,4 +984,5 @@ def parse_statement(raw_ocr, client: str = "Unknown", account_type: str = "Unkno
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
+        "meta": (raw_ocr.get("meta") or {}),
     }

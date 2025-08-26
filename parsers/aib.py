@@ -380,48 +380,55 @@ def infer_currency_from_headers(pages: list[dict]) -> str | None:
     return None
 
 # ----------------------------
-# Build a single statement node
+# Public endpoint
 # ----------------------------
 
-def _make_statement_node(raw_ocr: dict, client: str, account_type: str, debug: bool = True) -> dict:
+def parse_statement(
+    raw_ocr: dict,
+    client: str = "Unknown",
+    account_type: str = "Unknown",
+    institution: str = "Unknown",   # let caller pass the detected bank name
+    debug: bool = True,
+) -> dict:
+
     pages = raw_ocr.get("pages", []) or []
 
-    # IBAN & currency detection
+    # --- identifiers / currency ---
     iban = extract_iban(pages)
-    currency = "GBP" if iban and iban.upper().startswith("GB") else "EUR"
-    if not iban:
-        inferred = infer_currency_from_headers(pages)
-        if inferred:
-            currency = inferred
+    currency = "GBP" if (iban and iban.upper().startswith("GB")) else "EUR"
+    inferred = infer_currency_from_headers(pages)
+    if inferred:
+        currency = inferred
 
-    # Transactions (flat)
+    # --- rows ---
     transactions = parse_transactions(pages, iban=iban)
 
-    # Opening and closing (from table)
+    # --- balances from tables ---
     opening_val, start_date = extract_opening_balance_and_start_date(pages)
     closing_val = extract_closing_balance(pages)
 
-    # Totals from transactions
-    money_in  = round(sum(t["amount"] for t in transactions if t["transaction_type"] == "credit"), 2)
-    money_out = round(sum(t["amount"] for t in transactions if t["transaction_type"] == "debit"), 2)
+    # --- totals from transactions ---
+    money_in  = round(sum(t["amount"] for t in transactions if t.get("transaction_type") == "credit"), 2)
+    money_out = round(sum(t["amount"] for t in transactions if t.get("transaction_type") == "debit"),  2)
 
     closing_calc = None
     if opening_val is not None:
         closing_calc = round(opening_val + money_in - money_out, 2)
 
-    # Statement date range
+    # --- statement date range ---
+    end_date = None
     if transactions:
-        all_dates = [t["transaction_date"] for t in transactions if t["transaction_date"]]
-        start_date = start_date or (min(all_dates) if all_dates else None)
-        end_date   = max(all_dates) if all_dates else None
-    else:
-        end_date = None
+        all_dates = [t.get("transaction_date") for t in transactions if t.get("transaction_date")]
+        if all_dates:
+            start_date = start_date or min(all_dates)
+            end_date   = max(all_dates)
 
+    # --- currency bucket (single currency node) ---
     currencies = {
         currency: {
             "balances": {
                 "opening_balance": {
-                    "summary_table": None,                # AIB has no summary table
+                    "summary_table": None,                # summary tables not used here
                     "transactions_table": opening_val,
                 },
                 "money_in_total": {
@@ -442,28 +449,19 @@ def _make_statement_node(raw_ocr: dict, client: str, account_type: str, debug: b
         }
     }
 
-    # Optional lightweight statement_id
+    # --- id ---
     sid_basis = f"{raw_ocr.get('file_name') or ''}|{start_date or ''}|{end_date or ''}"
     statement_id = hashlib.sha1(sid_basis.encode("utf-8")).hexdigest()[:12] if sid_basis.strip("|") else None
 
     return {
         "statement_id": statement_id,
         "file_name": raw_ocr.get("file_name"),
-        "institution": "AIB",
+        "institution": institution or "AIB",   # keep older behavior if not passed
         "account_type": account_type,
         "iban": iban,
         "statement_start_date": start_date,
         "statement_end_date": end_date,
         "currencies": currencies,
+        "meta": (raw_ocr.get("meta") or {}),  # includes page_source_counts from extract/data_extract.py
     }
 
-# ----------------------------
-# Public entrypoint: bundle with one statement
-# ----------------------------
-
-def parse_statement(raw_ocr: dict, client: str = "Unknown", account_type: str = "Unknown", debug: bool = True) -> dict:
-    """
-    Kept for compatibility. Returns ONLY the inner statement object (not the bundle).
-    Prefer 'parse_statement_bundle' going forward.
-    """
-    return _make_statement_node(raw_ocr, client=client, account_type=account_type, debug=debug)

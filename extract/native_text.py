@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional
 import pandas as pd
 import numpy as np
 
-from .unified_lines import merge_native_page_to_ocr_shape
+from extract.unified_lines import merge_native_page_to_ocr_shape
 
 def native_page_to_ocr_shape_lines(
     page,

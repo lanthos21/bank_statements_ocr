@@ -93,21 +93,21 @@ def main():
                 #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb ca #4018 11.01.24 - 23.09.24.pdf",
                 #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\ptsb\ptsb sa #3734 14.06.24 - 12.05.25-9817.pdf",
                 # ],
-                "Revolut Accounts": [
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\account-statement_2024-09-26_2025-08-11_en-gb_618134-6107.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\august 2025 current account account-statement_2025-01-01_2025-08-07_en-gb_423fb1-7838.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut euro with pockets.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut gbp.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency2.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi euro accounts.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut spanish.pdf",
-                ],
-                # "N26 Accounts": [
-                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\david n26 statements.pdf",
-                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf",
-                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 march.pdf",
+                # "Revolut Accounts": [
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\account-statement_2024-09-26_2025-08-11_en-gb_618134-6107.pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\august 2025 current account account-statement_2025-01-01_2025-08-07_en-gb_423fb1-7838.pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut euro with pockets.pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut gbp.pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency.pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi currency2.pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut multi euro accounts.pdf",
+                #     r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\revolut\revolut spanish.pdf",
                 # ],
+                "N26 Accounts": [
+                    # r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\david n26 statements.pdf",
+                    # r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 ca #9104 1.4.24 -28.9.24 .pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\n26\n26 march.pdf",
+                ],
             }
         },
 
