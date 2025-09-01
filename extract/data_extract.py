@@ -1,15 +1,13 @@
-# extract/data_extract.py
 from __future__ import annotations
 import os, re
 from pathlib import Path
 from typing import Optional, Dict, Any
 import fitz
+from contextlib import suppress
 
 from extract.helper_classes import OcrProfile
 from extract.detect_currency import detect_page_currency_from_text
-from extract.helpers import (
-    render_page_to_image, preprocess_image, safe_write_png,
-)
+from extract.helpers import render_page_to_image, preprocess_image, safe_write_png
 from extract.native_text import native_page_to_ocr_shape_lines
 from extract.ocr_engine import ocr_page_build_lines
 
@@ -30,7 +28,6 @@ def _native_is_sufficient(lines: list[dict]) -> bool:
                 return True
     return len(lines) >= 5
 
-
 def extract_pdf_to_raw_data(
     pdf_path: str,
     profile: OcrProfile,
@@ -49,19 +46,18 @@ def extract_pdf_to_raw_data(
     native_pages = 0
     ocr_pages = 0
 
-    doc = fitz.open(pdf_path)
-    try:
+    # Use a context manager to avoid try/finally + broad except
+    with fitz.open(pdf_path) as doc:
         for page_idx in range(doc.page_count):
             pno = page_idx + 1
             page = doc.load_page(page_idx)
 
-            # currency detection (unchanged) ...
+            # currency detection
             cur, cur_method, cur_conf = (None, "unknown", 0.0)
             if bank_code:
-                try:
+                # catch only unexpected currency-detection errors
+                with suppress(Exception):
                     cur, cur_method, cur_conf = detect_page_currency_from_text(page, bank_code)
-                except Exception:
-                    pass
 
             base = render_page_to_image(doc, page_idx, profile.preprocess.dpi)
             processed = preprocess_image(base, profile.preprocess)
@@ -87,10 +83,8 @@ def extract_pdf_to_raw_data(
                 native_ok = _native_is_sufficient(lines)
 
             if native_ok and strategy != "ocr":
-                # COUNT as native
                 native_pages += 1
                 text_source = "native"
-
                 out_pages.append({
                     "page_number": pno,
                     "currency": cur,
@@ -100,7 +94,7 @@ def extract_pdf_to_raw_data(
                     "raster_path": None,
                     "image_width": W,
                     "image_height": H,
-                    "text_source": text_source,   # optional, but handy
+                    "text_source": text_source,
                 })
                 continue
 
@@ -115,7 +109,6 @@ def extract_pdf_to_raw_data(
                     processed=processed,
                     profile=profile,
                 )
-                # COUNT as OCR
                 ocr_pages += 1
                 text_source = "ocr"
 
@@ -130,10 +123,9 @@ def extract_pdf_to_raw_data(
                     "image_height": H,
                     "text_source": text_source,
                 })
-
                 continue
 
-            # native-only but weak/empty (strategy='native' and native_ok==False)
+            # native-only but weak/empty
             out_pages.append({
                 "page_number": pno,
                 "currency": cur,
@@ -146,25 +138,15 @@ def extract_pdf_to_raw_data(
                 "text_source": text_source,  # "none"
             })
 
-
-    finally:
-        try:
-            doc.close()
-        except Exception:
-            pass
-
-    # NEW: simple usage summary
+    # NEW: simple usage summary (no more grayed-out warning)
     page_usage = {
         "native_text_pages": native_pages,
         "ocr_pages": ocr_pages,
         "total_pages_in_pdf": len(out_pages),
     }
 
-
     return {
         "file_name": Path(pdf_path).name,
         "pages": out_pages,
-        "meta": {
-            "page_usage": page_usage,
-        },
+        "meta": {"page_usage": page_usage},
     }

@@ -392,8 +392,8 @@ def parse_transactions(pages: List[dict], iban: Optional[str] = None) -> List[di
                 "description": clean_desc,
                 "amount": credit if credit > 0 else debit,
                 "signed_amount": delta,
-                "statement_balance": doc_balance,
-                "currency": page_currency,      # ← NEW: tag the row with page currency
+                #"statement_balance": doc_balance,
+                #"currency": page_currency,      # ← NEW: tag the row with page currency
             })
             seq += 1
 
@@ -430,6 +430,25 @@ def parse_statement(raw, client: str = "Unknown", account_type: str = "Unknown")
     # 3) balances section
     buckets = group_transactions_by_currency(transactions, iban)
     currencies = build_currency_sections_balances(buckets, summaries)
+
+    # --- annotate transactions with balance_before_payment per currency ---
+    for cur_code, cur_node in (currencies or {}).items():
+        ob = ((cur_node.get("balances", {}) or {}).get("opening_balance", {}) or {})
+        # Prefer summary_table; else transactions_table; else 0.0
+        if ob.get("summary_table") is not None:
+            opening_for_calc = float(ob["summary_table"] or 0.0)
+        else:
+            opening_for_calc = float(ob.get("transactions_table") or 0.0)
+
+        running = 0.0
+        txns = sorted(cur_node.get("transactions", []), key=lambda t: t.get("seq", 0))
+        for t in txns:
+            # opening balance + sum of preceding signed_amounts (by seq)
+            t["balance_before_payment"] = round(opening_for_calc + running, 2)
+            running += float(t.get("signed_amount") or 0.0)
+
+        # keep seq ordering explicit
+        cur_node["transactions"] = txns
 
     # 4) dates from rows
     if transactions:

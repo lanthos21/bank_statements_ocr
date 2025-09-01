@@ -949,6 +949,26 @@ def parse_statement(raw, client: str = "Unknown", account_type: str = "Unknown",
     # Currency sections (strict schema)
     currencies = _build_currency_sections_from_rows(buckets, opening_by_cur, closing_by_cur)
 
+    # --- annotate transactions with balance_before_payment per currency ---
+    for cur_code, cur_node in (currencies or {}).items():
+        ob = ((cur_node.get("balances", {}) or {}).get("opening_balance", {}) or {})
+        # Prefer summary_table if present; else transactions_table; else 0.0
+        if ob.get("summary_table") is not None:
+            opening_for_calc = float(ob["summary_table"] or 0.0)
+        else:
+            opening_for_calc = float(ob.get("transactions_table") or 0.0)
+
+        running = 0.0
+        txns = sorted(cur_node.get("transactions", []), key=lambda t: t.get("seq", 0))
+        for t in txns:
+            # opening balance + sum of preceding signed_amounts (by seq)
+            t["balance_before_payment"] = round(opening_for_calc + running, 2)
+            running += float(t.get("signed_amount") or 0.0)
+
+        # ensure transactions stay seq-ordered
+        cur_node["transactions"] = txns
+
+
     # Statement dates
     if transactions:
         all_dates = [t.get("transaction_date") for t in transactions if t.get("transaction_date")]

@@ -407,6 +407,14 @@ def parse_statement(
     opening_val, start_date = extract_opening_balance_and_start_date(pages)
     closing_val = extract_closing_balance(pages)
 
+    # --- annotate transactions with balance_before_payment ---
+    opening_for_calc = opening_val or 0.0
+    running = 0.0
+    for t in sorted(transactions, key=lambda x: x.get("seq", 0)):
+        # opening balance + sum of preceding signed_amounts (by seq)
+        t["balance_before_payment"] = round(opening_for_calc + running, 2)
+        running += float(t.get("signed_amount") or 0.0)
+
     # --- totals from transactions ---
     money_in  = round(sum(t["amount"] for t in transactions if t.get("transaction_type") == "credit"), 2)
     money_out = round(sum(t["amount"] for t in transactions if t.get("transaction_type") == "debit"),  2)

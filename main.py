@@ -113,9 +113,43 @@ def main():
 
     }
 
-    # choose extraction strategy: "auto" (native with OCR fallback), "native", or "ocr"
-    strategy = "auto"
-
+    client_pdfs: Dict[str, Dict[str, Any]] = {
+        "Moayad Ouzen": {
+            "accounts": {
+                "Current Account": [
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 08 26 - Moayad Ouzen & Mira Arnaout Mortgage (1932)\revolut account-statement (01.02.25 - 07-08-25)-2198.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 08 26 - Moayad Ouzen & Mira Arnaout Mortgage (1932)\accountstatement follow up-2274.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 08 26 - Moayad Ouzen & Mira Arnaout Mortgage (1932)\boi c_a #1957 (04.03.25 - 07.08.25)-4789.pdf",
+                ],
+            }
+        },
+        "Mira Arnaout": {
+            "accounts": {
+                "Current Account": [
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 08 26 - Moayad Ouzen & Mira Arnaout Mortgage (1932)\jan 28 to 28th april 2025-5827.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 08 26 - Moayad Ouzen & Mira Arnaout Mortgage (1932)\aib c_a #045 (28.04.25 - 28.07.25)-5206.pdf",
+                ],
+            }
+        },
+    }
+    client_pdfs: Dict[str, Dict[str, Any]] = {
+        "Eline Roomer": {
+            "accounts": {
+                "Current Account": [
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 08 30 - Eline Roomer & Yigit Kalpakli Mortgage (1945)\accountstatement-8260.pdf",
+                ],
+            }
+        },
+        "Yigit Kalpakli": {
+            "accounts": {
+                "Current Account": [
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 08 30 - Eline Roomer & Yigit Kalpakli Mortgage (1945)\accountstatement-8260.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 08 30 - Eline Roomer & Yigit Kalpakli Mortgage (1945)\accountstatement 2-9724.pdf",
+                ],
+            }
+        },
+    }
+    strategy = "auto"  # extraction strategy: "auto" (native with OCR fallback), "native", or "ocr"
     bundle = {"schema_version": "bank-ocr.v1", "clients": []}
 
     try:
@@ -123,9 +157,9 @@ def main():
         # clean out previous audit files
         nuke_dir(Path("results_audit"))
 
-        # ---------------------------------------------------------------
-        # iterate over client_pdfs: {"accounts": {acct_type: [pdfs...]}}
-        # ---------------------------------------------------------------
+        # ------------------------------
+        # iterate over client_pdfs
+        # ------------------------------
         for client_name, cfg in client_pdfs.items():
             client_block = {"name": client_name, "statements": []}
             accounts = (cfg.get("accounts") or {}) if isinstance(cfg, dict) else {}
@@ -141,9 +175,9 @@ def main():
                     client_block["statements"].append(stmt)
             bundle["clients"].append(client_block)
 
-        # ---------------------------------------------------------------
+        # ------------------------------
         # save bundle & validate
-        # ---------------------------------------------------------------
+        # ------------------------------
         Path("results").mkdir(parents=True, exist_ok=True)
         out_name = "_".join(n.lower().replace(" ", "_") for n in client_pdfs.keys()) + "_bundle.json"
         bundle_out = Path("results") / out_name
