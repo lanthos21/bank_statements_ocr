@@ -133,18 +133,16 @@ def main():
         },
     }
     client_pdfs: Dict[str, Dict[str, Any]] = {
-        "Eline Roomer": {
+        "Tran Vu Huyen Chu": {
             "accounts": {
                 "Current Account": [
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 08 30 - Eline Roomer & Yigit Kalpakli Mortgage (1945)\accountstatement-8260.pdf",
-                ],
-            }
-        },
-        "Yigit Kalpakli": {
-            "accounts": {
-                "Current Account": [
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 08 30 - Eline Roomer & Yigit Kalpakli Mortgage (1945)\accountstatement-8260.pdf",
-                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 08 30 - Eline Roomer & Yigit Kalpakli Mortgage (1945)\accountstatement 2-9724.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 09 02 - Tran Vu Huyen Chu Mortgage (1850)\aib august to november 2024 -7042.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 09 02 - Tran Vu Huyen Chu Mortgage (1850)\aib bank statement -9258.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 09 02 - Tran Vu Huyen Chu Mortgage (1850)\aib feb 2025-4056.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 09 02 - Tran Vu Huyen Chu Mortgage (1850)\aib feb to may 2025-7652.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 09 02 - Tran Vu Huyen Chu Mortgage (1850)\aib november to feb 2025-1404.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 09 02 - Tran Vu Huyen Chu Mortgage (1850)\estatement aib - august 2024-9811.pdf",
+                    r"R:\DEVELOPER\FINPLAN\projects\x misc\statements\CASES\2025 09 02 - Tran Vu Huyen Chu Mortgage (1850)\may to jun 2025-2113.pdf",
                 ],
             }
         },

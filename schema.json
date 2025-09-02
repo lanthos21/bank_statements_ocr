@@ -27,7 +27,8 @@
                   "transaction_type": "debit",
                   "description": "VDC-DUNNES CORNELS",
                   "amount": 90.82,
-                  "signed_amount": -90.82
+                  "signed_amount": -90.82,
+                  "balance_before_payment": 5826.48
                 },
                 {
                   "seq": 1,
@@ -35,7 +36,8 @@
                   "transaction_type": "debit",
                   "description": "VDC-JOHNSTOWN TOTA",
                   "amount": 35.67,
-                  "signed_amount": -35.67
+                  "signed_amount": -35.67,
+                  "balance_before_payment": 5735.66
                 }
               ]
             }

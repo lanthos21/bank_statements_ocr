@@ -23,6 +23,11 @@ RE_BAL_FWD   = re.compile(r"\bBALANCE\s*FORWARD\b", re.IGNORECASE)
 RE_DATE_LONG = re.compile(r"\b(\d{1,2})\s+[A-Za-z]{3,9}\s+\d{4}\b")
 RE_DATE_NUM  = re.compile(r"\b(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})\b")
 
+RE_OPENING_BAL = re.compile(
+    r"\b(OPENING\s+BALANCE|BALANCE\s+BROUGHT\s+FORWARD|BALANCE\s*FORWARD)\b",
+    re.IGNORECASE
+)
+
 # Accept either symbol or 3-letter code as a header currency token
 CURRENCY_HEADER_TOKENS = {"€", "£", "EUR", "GBP"}
 
@@ -189,24 +194,22 @@ def _looks_like_amount_token(tok: str) -> bool:
 # ----------------------------
 
 def extract_opening_balance_and_start_date(pages: list[dict], debug: bool = False) -> tuple[float | None, str | None]:
-    """Opening balance from the very first 'BALANCE FORWARD' line in the statement."""
+    """Get opening balance from the first 'OPENING BALANCE' / 'BALANCE BROUGHT FORWARD' / 'BALANCE FORWARD' line."""
     opening_value: Optional[float] = None
     earliest_date: Optional[str] = None
 
     for pidx, page in enumerate(pages or []):
-        lines = page.get("lines", []) or []
-        for i, line in enumerate(lines):
+        for i, line in enumerate((page.get("lines", []) or [])):
             lt = line.get("line_text") or ""
-            if not RE_BAL_FWD.search(lt):
+            if not RE_OPENING_BAL.search(lt):
                 continue
 
-            if opening_value is not None:
-                return opening_value, earliest_date
-
+            # first match = true opening; return immediately
             words = line.get("words", []) or []
             _xr, val = _rightmost_numeric_with_x(words)
             if val is not None:
                 opening_value = float(val)
+
             d = _find_date_in_text(lt)
             if d:
                 earliest_date = d
@@ -215,23 +218,30 @@ def extract_opening_balance_and_start_date(pages: list[dict], debug: bool = Fals
     return None, None
 
 
+
 def extract_closing_balance(pages: list[dict]) -> Optional[float]:
-    """Closing balance = last number near Balance €|£ column."""
+    """Closing balance = last number near Balance €|£ column on the final page only."""
+    if not pages:
+        return None
+
+    last_page = pages[-1]
+    header = detect_column_positions(last_page.get("lines", []) or [])
+    if not header:
+        return None
+
+    header_positions, start_idx, end_idx = header
+    bal_r = int(header_positions["balance_right"])
+    margin = 120
+
     best = None
-    headers = {pidx: (detect_column_positions(p.get("lines", []) or []) or (None,))[0] for pidx, p in enumerate(pages)}
-    for pidx, page in enumerate(pages or []):
-        pos = headers.get(pidx)
-        if not pos:
+    for line in last_page.get("lines", []) or []:
+        xr, val = _rightmost_numeric_with_x(line.get("words", []) or [])
+        if val is None or xr is None:
             continue
-        bal_r = int(pos["balance_right"])
-        margin = 120
-        for line in page.get("lines", []) or []:
-            xr, val = _rightmost_numeric_with_x(line.get("words", []) or [])
-            if val is None or xr is None:
-                continue
-            if abs(int(xr) - bal_r) <= margin:
-                best = float(val)
+        if abs(int(xr) - bal_r) <= margin:
+            best = float(val)
     return best
+
 
 # ----------------------------
 # Transactions
@@ -255,7 +265,7 @@ def parse_transactions(pages: list[dict], iban: str | None = None) -> list[dict]
 
         for line in lines[start_idx + 1: end_idx]:
             ltxt = line.get("line_text", "") or ""
-            if RE_BAL_FWD.search(ltxt):
+            if RE_OPENING_BAL.search(ltxt):
                 d = _find_date_in_text(ltxt)
                 if d:
                     last_seen_date = d
